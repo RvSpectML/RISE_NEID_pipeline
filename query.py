@@ -16,7 +16,7 @@ while start_date <= end_date:
     outdir.mkdir(parents=True, exist_ok=True)
     
     # filepath of the meta file
-    query_result_file = outdir.joinpath("meta.csv")
+    query_result_file = str(outdir.joinpath("meta.csv"))
 
     # query parameters
     param = {}
@@ -25,10 +25,10 @@ while start_date <= end_date:
     param["datetime"] = f'{start_date} 00:00:00/{start_date} 23:59:59'
 
     # get the meta file
-    Neid.query_criteria(param, default_format, outpath=query_result_file)
+    Neid.query_criteria(param, format=default_format, outpath=query_result_file)
 
     # download the fits data
-    Neid.download(query_result_file, param["datalevel"], default_format, outdir)
+    Neid.download(query_result_file, param["datalevel"], default_format, str(outdir))
 
     # logging
     num_lines = countlines(query_result_file) - 1
