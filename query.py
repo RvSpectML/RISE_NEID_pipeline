@@ -29,9 +29,5 @@ while start_date <= end_date:
 
     # download the fits data
     Neid.download(query_result_file, param["datalevel"], default_format, str(outdir))
-
-    # logging
-    num_lines = countlines(query_result_file) - 1
-    println('{start_date}: {num_lines} entries have been downloaded.')
     
     start_date += delta_date
