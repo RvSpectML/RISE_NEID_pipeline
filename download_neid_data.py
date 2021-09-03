@@ -1,4 +1,5 @@
 import argparse
+from backports.datetime_fromisoformat import MonkeyPatch
 from datetime import date, timedelta
 from pathlib import Path
 from pyneid.neid import Neid
@@ -48,6 +49,7 @@ if __name__ == "__main__":
     # parse the input arguments
     args = parser.parse_args()
     root_dir = Path(args.root_dir)
+    MonkeyPatch.patch_fromisoformat()
     start_date = date.fromisoformat(args.start_date)
     end_date = date.fromisoformat(args.end_date)
     
