@@ -1,0 +1,33 @@
+#!/bin/bash
+#PBS -N download_neid
+#PBS -l nodes=1:ppn=1
+#PBS -l pmem=4gb
+#PBS -l walltime=47:00:00
+#PBS -A ebf11_c_g_vc_default
+#PBS -q hprc
+#PBS -j oe
+
+echo "Job $PBS_JOBID started on $(hostname) at $(date)"
+
+ROOT_DIR=/gpfs/group/ebf11/default/RISE_NEID
+DATA_DIR=${ROOT_DIR}/data/solar_L1/v1.0.0
+cd ${ROOT_DIR}/workdir
+
+# activate the python virtual environment
+source ${ROOT_DIR}/python3_venv/bin/activate
+
+# get the start and end dates to download data for
+LAST_DATE=$(head -1 ${DATA_DIR}/0_max_date)
+START_DATE=$(date -d "$LAST_DATE 1 days" +"%Y-%m-%d")
+END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
+
+echo "START DATE: $START_DATE"
+echo "END DATE: $END_DATE"
+
+# download data
+python ${ROOT_DIR}/code/download_neid_data.py ${DATA_DIR} ${START_DATE} ${END_DATE}
+
+# record the latest date that the data has been downlowded for
+ls ${DATA_DIR} | sort -r | head -1 > ${DATA_DIR}/0_max_date 
+
+echo "Job ended at $(date)"
