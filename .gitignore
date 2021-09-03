@@ -115,4 +115,5 @@ dmypy.json
 
 workdir/
 data/
+python3_venv/
 .DS_Store
