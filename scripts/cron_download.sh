@@ -6,5 +6,5 @@ then
 else
     echo "Submit the job."
     cd /gpfs/group/ebf11/default/RISE_NEID/workdir
-    qsub ../scripts/download_neid.pbs
+    /usr/local/bin/qsub ../scripts/download_neid.pbs
 fi
