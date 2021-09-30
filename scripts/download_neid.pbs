@@ -6,11 +6,13 @@
 #PBS -A ebf11_c_g_vc_default
 #PBS -q hprc
 #PBS -j oe
+#PBS -W umask=002
 
 echo "Job $PBS_JOBID started on $(hostname) at $(date)"
 
+VERSION=v1.1.2
 ROOT_DIR=/gpfs/group/ebf11/default/RISE_NEID
-DATA_DIR=${ROOT_DIR}/data/solar_L1/v1.0.0
+DATA_DIR=${ROOT_DIR}/data/solar_L1/${VERSION}
 cd ${ROOT_DIR}/workdir
 
 # activate the python virtual environment
