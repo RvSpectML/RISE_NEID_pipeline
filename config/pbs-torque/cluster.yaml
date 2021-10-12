@@ -2,14 +2,10 @@ __default__:
   jobname: "{rule}"
   nodes: 1
   ppn: 1
-  pmem: "1000mb"
+  pmem: "8000mb"
   walltime: "5:00"
   account: "open"
   email: "dus73@psu.edu"
-  mailon: "bea"
+  mailon: "n"
   jobout: "oe"
-  outdir: "code/log/"
-
-count_words:
-  ppn: 2
-  walltime: "10:00"
+  outdir: "logs/"
