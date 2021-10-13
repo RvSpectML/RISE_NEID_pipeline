@@ -5,7 +5,7 @@ from pathlib import Path
 from pyneid.neid import Neid
 from shutil import rmtree
 
-def download_neid(root_dir, start_date, end_date):
+def download_neid(root_dir, start_date, end_date, level):
     # requested format of the meta file
     default_format = "csv"
 
@@ -22,7 +22,7 @@ def download_neid(root_dir, start_date, end_date):
 
         # query parameters
         param = {}
-        param["datalevel"] = "solarl1" # L1 data only
+        param["datalevel"] = f"solarl{level}" # L1 data only
         param["object"] = "Sun"
         param["datetime"] = f'{start_date} 00:00:00/{start_date} 23:59:59'
 
@@ -44,7 +44,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Download Solar L1 data from NEID archive.')
     parser.add_argument('root_dir', help='root directory to save the downloaded data files')
     parser.add_argument('start_date', help='start date yyyy-mm-dd of the data file to download')
-    parser.add_argument('end_date', help='end date yyyy-mm-dd of the data file to download ')
+    parser.add_argument('end_date', help='end date yyyy-mm-dd of the data file to download')
+    parser.add_argument('level', help='data level')
 
     # parse the input arguments
     args = parser.parse_args()
@@ -54,5 +55,5 @@ if __name__ == "__main__":
     end_date = date.fromisoformat(args.end_date)
     
     # download data files
-    download_neid(root_dir, start_date, end_date)
+    download_neid(root_dir, start_date, end_date, args.level)
     

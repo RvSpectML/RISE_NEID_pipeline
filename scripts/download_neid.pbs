@@ -11,8 +11,10 @@
 echo "Job $PBS_JOBID started on $(hostname) at $(date)"
 
 VERSION=v1.1.2
+LEVEL=1
+
 ROOT_DIR=/gpfs/group/ebf11/default/RISE_NEID
-DATA_DIR=${ROOT_DIR}/data/solar_L1/${VERSION}
+DATA_DIR=${ROOT_DIR}/data/solar_L${LEVEL}/${VERSION}
 cd ${ROOT_DIR}/workdir
 
 # activate the python virtual environment
@@ -27,7 +29,7 @@ echo "START DATE: $START_DATE"
 echo "END DATE: $END_DATE"
 
 # download data
-python ${ROOT_DIR}/code/download_neid_data.py ${DATA_DIR} ${START_DATE} ${END_DATE}
+python ${ROOT_DIR}/code/download_neid_data.py ${DATA_DIR} ${START_DATE} ${END_DATE} ${LEVEL}
 
 # record the latest date that the data has been downlowded for
 ls ${DATA_DIR} | sort -r | head -1 > ${DATA_DIR}/0_max_date 
