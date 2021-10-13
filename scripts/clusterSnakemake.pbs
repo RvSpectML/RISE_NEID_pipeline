@@ -25,7 +25,7 @@
 #PBS -o logs/
 #PBS -V
 
-module load anaconda3 /2020.07
+module load anaconda3/2020.07
 source activate /storage/home/dus73/scratch/sw/conda_snakemake/
 
 
@@ -43,9 +43,20 @@ if [ -d "$PBS_O_WORKDIR" ] ; then
     cd $PBS_O_WORKDIR
 fi
 
+####################################################################
+# Option 1.                                                        #
+# initiating snakemake and running workflow in a single submission #
+####################################################################
 
-# Initiating snakemake and running workflow in cluster mode
-snakemake --profile config/pbs-torque/ --latency-wait 20
+# snakemake
+
+
+####################################################################
+# Option 2.                                                        #
+# Initiating snakemake and running workflow in cluster mode        #
+####################################################################
+
+snakemake --profile config/pbs-torque/ --latency-wait 20 --groups manifest=group0 ccfs=group0 --group-components group0=5
 
 
 # Printing out job summary

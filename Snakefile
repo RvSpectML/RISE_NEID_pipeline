@@ -23,7 +23,7 @@ rule manifest:
     run:
         shell(f"module use {MODULE_DIR}")
         shell(f"module load julia/{JULIA_VERSION}")
-        shell(f"mkdir {OUTPUT_DIR}/{{wildcards.date}}")
+        shell(f"if [ ! -d {OUTPUT_DIR}/{{wildcards.date}} ]; then mkdir {OUTPUT_DIR}/{{wildcards.date}}; fi")
         shell(f"julia --project={NEID_SOLAR_SCRIPTS} -e 'target_subdir=\"{{input}}\"; output_dir=\"{OUTPUT_DIR}/{{wildcards.date}}\";  include(\"{NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_1.0.0.jl\")'")
 
 
