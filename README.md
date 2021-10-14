@@ -1,15 +1,11 @@
 # Download data from NEID ARCHIVE
  
-To download solar L1 data from NEID ARCHIVE https://neid.ipac.caltech.edu/search_solar.php,
+To download solar L1 data from NEID ARCHIVE https://neid.ipac.caltech.edu/search_solar.php, first update "VERSION", "LEVEL", "ROOT_DIR", "DATA_DIR", "START_DATE" and/or "END_DATE" in the PBS script download_neid.pbs if necessary. Then
 
-$ cd workdir
-
-Update "VERSION", "LEVEL", "ROOT_DIR" and "DATA_DIR" in the PBS script download_neid.pbs if necessary.
-
-$ qsub ../scripts/download_neid.pbs
+$ qsub scripts/download_neid.pbs
 
 Downloaded data will be saved to DATA_DIR defined in the PBS script download_neid.pbs, 
-grouped by date, and the output logs will be saved to the directory workdir.
+grouped by date, and the output logs will be saved to the directory logs/.
 The latest date for which the NEID data has been downloaded is recorded in the file 
 <DATA_DIR>/0_max_date. The PBS script download_neid.pbs
 checks that latest date, and it sets the start date of the new query to be the next day of that date 

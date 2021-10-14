@@ -6,6 +6,7 @@
 #PBS -A ebf11_c_g_vc_default
 #PBS -q hprc
 #PBS -j oe
+#PBS -o logs/
 #PBS -W umask=002
 
 echo "Job $PBS_JOBID started on $(hostname) at $(date)"
