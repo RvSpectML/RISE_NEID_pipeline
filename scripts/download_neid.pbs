@@ -16,14 +16,18 @@ LEVEL=1
 
 ROOT_DIR=/gpfs/group/ebf11/default/RISE_NEID
 DATA_DIR=${ROOT_DIR}/data/solar_L${LEVEL}/${VERSION}
-cd ${ROOT_DIR}/workdir
 
 # activate the python virtual environment
 source ${ROOT_DIR}/python3_venv/bin/activate
 
 # get the start and end dates to download data for
-LAST_DATE=$(head -1 ${DATA_DIR}/0_max_date)
-START_DATE=$(date -d "$LAST_DATE 1 days" +"%Y-%m-%d")
+if [ -f  ${DATA_DIR}/0_max_date ]; then
+    LAST_DATE=$(head -1 ${DATA_DIR}/0_max_date)
+    START_DATE=$(date -d "$LAST_DATE 1 days" +"%Y-%m-%d")
+else
+    START_DATE="2020-01-01"
+fi
+
 END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
 
 echo "START DATE: $START_DATE"
