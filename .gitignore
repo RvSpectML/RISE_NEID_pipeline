@@ -115,7 +115,8 @@ dmypy.json
 
 workdir/
 data/
-python3_venv/
+venv_download/
+conda_snakemake/
 .DS_Store
 logs/
 .snakemake/

@@ -18,7 +18,7 @@ ROOT_DIR=/gpfs/group/ebf11/default/RISE_NEID
 DATA_DIR=${ROOT_DIR}/data/solar_L${LEVEL}/${VERSION}
 
 # activate the python virtual environment
-source ${ROOT_DIR}/python3_venv/bin/activate
+source ${ROOT_DIR}/venv_download/bin/activate
 
 # get the start and end dates to download data for
 if [ -f  ${DATA_DIR}/0_max_date ]; then
