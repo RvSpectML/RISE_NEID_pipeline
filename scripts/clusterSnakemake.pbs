@@ -10,7 +10,7 @@
 
 #PBS -l nodes=1:ppn=1
 #PBS -l pmem=4000mb
-#PBS -l walltime=2:00:00
+#PBS -l walltime=24:00:00
 
 #### #### ####  These are the least frequently changing options
 
@@ -24,10 +24,6 @@
 #PBS -j oe
 #PBS -o logs/
 #PBS -V
-
-module load anaconda3/2020.07
-source activate /storage/home/dus73/scratch/sw/conda_snakemake/
-
 
 ##  Print the nodename(s) to the output in case needed for diagnostics,
 ##  or if you need information about the hardware after the job ran.
@@ -43,20 +39,21 @@ if [ -d "$PBS_O_WORKDIR" ] ; then
     cd $PBS_O_WORKDIR
 fi
 
+source venv_snakemake/bin/activate
+
 ####################################################################
 # Option 1.                                                        #
 # initiating snakemake and running workflow in a single submission #
 ####################################################################
 
-# snakemake
-
+snakemake -c1
 
 ####################################################################
 # Option 2.                                                        #
 # Initiating snakemake and running workflow in cluster mode        #
 ####################################################################
 
-snakemake --profile config/pbs-torque/ --latency-wait 20 --groups manifest=group0 ccfs=group0 --group-components group0=5
+# snakemake --profile config/pbs-torque/ --latency-wait 20 --groups manifest=group0 ccfs=group0 --group-components group0=5
 
 
 # Printing out job summary
