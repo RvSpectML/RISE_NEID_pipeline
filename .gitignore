@@ -120,3 +120,5 @@ venv_snakemake/
 .DS_Store
 logs/
 .snakemake/
+
+config/config.yaml

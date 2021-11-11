@@ -1,0 +1,13 @@
+---
+DATA_ROOT: /path/to/data
+INSTRUMENT: neid_solar
+INPUT_VERSION: v1.1.2
+USER_ID: my_username
+PIPELINE_ID: test1
+JULIA: /path/to/julia
+NEID_SOLAR_SCRIPTS: /path/to/NeidSolarScripts.jl
+params:
+  orders_first: 56
+  orders_last: 108
+  range_no_mask_change: 6.0
+
