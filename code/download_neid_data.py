@@ -1,4 +1,6 @@
 import argparse
+import pandas as pd
+import shutil
 from backports.datetime_fromisoformat import MonkeyPatch
 from datetime import date, timedelta
 from pathlib import Path
@@ -13,12 +15,8 @@ def download_neid(root_dir, start_date, end_date, level):
     delta_date = timedelta(days=1)
 
     while start_date <= end_date:
-        # create the data directory for start_date
-        outdir = root_dir.joinpath(str(start_date))
-        outdir.mkdir(parents=True, exist_ok=True)
-
         # filepath of the meta file
-        query_result_file = str(outdir.joinpath("meta.csv"))
+        query_result_file = root_dir.joinpath("meta.csv")
 
         # query parameters
         param = {}
@@ -28,14 +26,36 @@ def download_neid(root_dir, start_date, end_date, level):
 
         try:
             # get the meta file
-            Neid.query_criteria(param, format=default_format, outpath=query_result_file)
+            Neid.query_criteria(param, format=default_format, outpath=str(query_result_file))
 
-            # download the fits data
-            Neid.download(query_result_file, param["datalevel"], default_format, str(outdir))
+            # read the meta file
+            df = pd.read_csv(str(query_result_file))
+            groups = df.groupby('swversion')
+            
+            for swversion, grouped_df in groups:
+                try:
+                    # create the data directory for start_date
+                    outdir = root_dir.joinpath(swversion)\
+                    .joinpath(level)\
+                    .joinpath(str(start_date.year))\
+                    .joinpath(str(start_date.month))\
+                    .joinpath(str(start_date.day))
+
+                    outdir.mkdir(parents=True, exist_ok=True)
+                    group_file = root_dir.joinpath("group.csv")
+                    grouped_df.to_csv(str(group_file))
+
+                    # download the fits data
+                    Neid.download(str(group_file), param["datalevel"], default_format, str(outdir))
+                    group_file.unlink()
+                except:
+                    shutil.rmtree(str(outdir))
+            query_result_file.unlink()
         except:
-            # if an error occurred, delete the directory for that date 
-            rmtree(outdir)
-
+            # if an error occurred, delete the query result file
+            if query_result_file.is_file():
+                query_result_file.unlink()
+                
         start_date += delta_date
         
 # start of the program    
