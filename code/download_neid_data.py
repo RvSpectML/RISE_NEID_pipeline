@@ -16,7 +16,7 @@ def download_neid(root_dir, start_date, end_date, level):
 
     while start_date <= end_date:
         # filepath of the meta file
-        query_result_file = root_dir.joinpath("meta.csv")
+        query_result_file = root_dir.joinpath("meta_all.csv")
 
         # query parameters
         param = {}
@@ -42,12 +42,12 @@ def download_neid(root_dir, start_date, end_date, level):
                     .joinpath(str(start_date.day))
 
                     outdir.mkdir(parents=True, exist_ok=True)
-                    group_file = root_dir.joinpath("group.csv")
+                    
+                    group_file = outdir.joinpath("meta.csv")
                     grouped_df.to_csv(str(group_file))
 
                     # download the fits data
                     Neid.download(str(group_file), param["datalevel"], default_format, str(outdir))
-                    group_file.unlink()
                 except:
                     shutil.rmtree(str(outdir))
             query_result_file.unlink()
