@@ -13,6 +13,9 @@ def download_neid(root_dir, start_date, end_date, level):
 
     # increment by one day 
     delta_date = timedelta(days=1)
+    
+    # create the root directory if it does not exist yet
+    root_dir.mkdir(parents=True, exist_ok=True)
 
     while start_date <= end_date:
         # filepath of the meta file
@@ -35,22 +38,22 @@ def download_neid(root_dir, start_date, end_date, level):
             for swversion, grouped_df in groups:
                 try:
                     # create the data directory for start_date
-                    outdir = root_dir.joinpath(swversion)\
+                    out_dir = root_dir.joinpath(swversion)\
                     .joinpath(level)\
                     .joinpath(str(start_date.year))\
                     .joinpath(str(start_date.month))\
                     .joinpath(str(start_date.day))
 
-                    outdir.mkdir(parents=True, exist_ok=True)
+                    out_dir.mkdir(parents=True, exist_ok=True)
                     
-                    group_file = outdir.joinpath("meta.csv")
+                    group_file = out_dir.joinpath("meta.csv")
                     grouped_df.to_csv(str(group_file))
 
                     # download the fits data
-                    Neid.download(str(group_file), param["datalevel"], default_format, str(outdir))
+                    Neid.download(str(group_file), param["datalevel"], default_format, str(out_dir))
                 except Exception as e:
                     print(e)
-                    shutil.rmtree(str(outdir))
+                    shutil.rmtree(str(out_dir))
             query_result_file.unlink()
         except Exception as e:
             print(e)
