@@ -48,10 +48,12 @@ def download_neid(root_dir, start_date, end_date, level):
 
                     # download the fits data
                     Neid.download(str(group_file), param["datalevel"], default_format, str(outdir))
-                except:
+                except Exception as e:
+                    print(e)
                     shutil.rmtree(str(outdir))
             query_result_file.unlink()
-        except:
+        except Exception as e:
+            print(e)
             # if an error occurred, delete the query result file
             if query_result_file.is_file():
                 query_result_file.unlink()
