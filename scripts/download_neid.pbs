@@ -11,10 +11,16 @@
 
 echo "Job $PBS_JOBID started on $(hostname) at $(date)"
 
+# software version that creates the input data
 VERSION=v1.1.2
+
+# data level
 LEVEL=2
 
+# root directory of the RISE_NEID pipeline
 ROOT_DIR=/gpfs/group/ebf11/default/RISE_NEID
+
+# root directory for data
 DATA_DIR=${ROOT_DIR}/data/neid_solar
 
 # activate the python virtual environment

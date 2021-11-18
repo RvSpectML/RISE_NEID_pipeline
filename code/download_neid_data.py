@@ -5,7 +5,6 @@ from backports.datetime_fromisoformat import MonkeyPatch
 from datetime import date, timedelta
 from pathlib import Path
 from pyneid.neid import Neid
-from shutil import rmtree
 
 def download_neid(root_dir, start_date, end_date, swversion, level):
     # requested format of the meta file

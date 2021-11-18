@@ -1,0 +1,69 @@
+#!/bin/bash
+#PBS -N verify_download_neid
+#PBS -l nodes=1:ppn=1
+#PBS -l pmem=4gb
+#PBS -l walltime=47:00:00
+#PBS -A ebf11_c_g_vc_default
+#PBS -q hprc
+#PBS -j oe
+#PBS -o logs/
+#PBS -W umask=002
+
+echo "Job $PBS_JOBID started on $(hostname) at $(date)"
+
+# software version that creates the input data
+VERSION=v1.1.2
+
+# data level
+LEVEL=2
+
+# root directory of the RISE_NEID pipeline
+ROOT_DIR=/gpfs/group/ebf11/default/RISE_NEID
+
+# root directory for data
+DATA_DIR=${ROOT_DIR}/data/neid_solar
+
+# julia projects and scripts
+JULIA_PROJECT=/gpfs/group/ebf11/default/ebf11/neid_solar/code/NeidSolarScripts.jl
+VERIFY_DOWNLOAD_SCRIPT=/gpfs/group/ebf11/default/RISE_NEID_ebf/code/verify_download.jl
+
+# path to julia executable and JULIA_DEPOT_PATH
+export PATH=$PATH:/gpfs/group/ebf11/default/sw/julia-1.6.2/bin
+export JULIA_DEPOT_PATH=/gpfs/group/ebf11/default/sw/.julia
+
+# activate the python virtual environment for downloading
+source ${ROOT_DIR}/venv_download/bin/activate
+
+# get the start and end dates to download data for
+if [ -f  ${DATA_DIR}/${VERSION}/L${LEVEL}/0_max_date ]; then
+    LAST_DATE=$(head -1 ${DATA_DIR}/${VERSION}/L${LEVEL}/0_max_date)
+    START_DATE=$(date -d "$LAST_DATE 1 days" +"%Y-%m-%d")
+else
+    START_DATE="2020-01-01"
+fi
+
+END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
+
+echo "START DATE: $START_DATE"
+echo "END DATE: $END_DATE"
+
+# verify downloaded data
+DATE=$START_DATE
+end_date_s=$(date -d "$END_DATE" +"%s")
+while [ $(date -d "$DATE" +"%s") -le $end_date_s ]
+do
+    folder=${DATA_DIR}/${VERSION}/L${LEVEL}/$(date -d "$DATE" +"%Y/%m/%d")
+    if [ -d "$folder" ]; then
+        if [ ! -f "${folder}/0_download_verified" ]; then
+            julia --project=$JULIA_PROJECT $VERIFY_DOWNLOAD_SCRIPT ${folder} --checksums
+            if [ ! -f "${folder}/0_download_verified" ]; then
+                python ${ROOT_DIR}/code/download_neid_data.py ${DATA_DIR} ${START_DATE} ${END_DATE} ${VERSION} ${LEVEL}
+            fi
+        fi
+    else
+        python ${ROOT_DIR}/code/download_neid_data.py ${DATA_DIR} ${START_DATE} ${END_DATE} ${VERSION} ${LEVEL}
+    fi
+    DATE=$(date -d "$DATE 1 days")
+done
+
+echo "Job ended at $(date)"
