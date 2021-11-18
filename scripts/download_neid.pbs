@@ -12,17 +12,18 @@
 echo "Job $PBS_JOBID started on $(hostname) at $(date)"
 
 VERSION=v1.1.2
-LEVEL=1
+LEVEL=2
+OBJECT=Sun
 
 ROOT_DIR=/gpfs/group/ebf11/default/RISE_NEID
-DATA_DIR=${ROOT_DIR}/data/solar_L${LEVEL}/${VERSION}
+DATA_DIR=${ROOT_DIR}/data/neid_solar
 
 # activate the python virtual environment
 source ${ROOT_DIR}/venv_download/bin/activate
 
 # get the start and end dates to download data for
-if [ -f  ${DATA_DIR}/0_max_date ]; then
-    LAST_DATE=$(head -1 ${DATA_DIR}/0_max_date)
+if [ -f  ${DATA_DIR}/${VERSION}/L${LEVEL}/0_max_date ]; then
+    LAST_DATE=$(head -1 ${DATA_DIR}/${VERSION}/L${LEVEL}/0_max_date)
     START_DATE=$(date -d "$LAST_DATE 1 days" +"%Y-%m-%d")
 else
     START_DATE="2020-01-01"
@@ -34,9 +35,6 @@ echo "START DATE: $START_DATE"
 echo "END DATE: $END_DATE"
 
 # download data
-python ${ROOT_DIR}/code/download_neid_data.py ${DATA_DIR} ${START_DATE} ${END_DATE} ${LEVEL}
-
-# record the latest date that the data has been downlowded for
-ls ${DATA_DIR} | sort -r | head -1 > ${DATA_DIR}/0_max_date 
+python ${ROOT_DIR}/code/download_neid_data.py ${DATA_DIR} ${START_DATE} ${END_DATE} ${OBJECT} ${VERSION} ${LEVEL}
 
 echo "Job ended at $(date)"
