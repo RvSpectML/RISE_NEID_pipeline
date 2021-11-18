@@ -7,7 +7,7 @@ from pathlib import Path
 from pyneid.neid import Neid
 from shutil import rmtree
 
-def download_neid(root_dir, start_date, end_date, obj, swversion, level):
+def download_neid(root_dir, start_date, end_date, swversion, level):
     # requested format of the meta file
     default_format = "csv"
 
@@ -29,8 +29,7 @@ def download_neid(root_dir, start_date, end_date, obj, swversion, level):
                    
         # query parameters
         param = {}
-        param["datalevel"] = f"l{level}"
-        param["object"] = obj
+        param["datalevel"] = f"solarl{level}"
         param["datetime"] = f'{start_date} 00:00:00/{start_date} 23:59:59'
         
         # skip the following section if the date's data has already been downloaded and verified
@@ -52,22 +51,27 @@ def download_neid(root_dir, start_date, end_date, obj, swversion, level):
                     Neid.query_criteria(param, format=default_format, outpath=str(query_result_file_all))
 
                     # read the meta file
-                    df = pd.read_csv(str(query_result_file))
+                    df = pd.read_csv(str(query_result_file_all))
                     
                     # filter for the swversion
-                    df = df[df['swversion']==swversion]  
+                    df_version = df[df['swversion']==swversion]  
                     
-                    # save to meta.csv
-                    query_result_file = out_dir.joinpath("meta.csv")
-                    df_version.to_csv(str(query_result_file))    
+                    if len(df_version.index) > 0:
+                        # save to meta.csv
+                        query_result_file = out_dir.joinpath("meta.csv")
+                        df_version.to_csv(str(query_result_file))    
         
-                    # remove meta_all.csv
-                    query_result_file_all.unlink()
+                        # remove meta_all.csv
+                        query_result_file_all.unlink()
 
-                    # download the fits data
-                    Neid.download(str(query_result_file), param["datalevel"], default_format, str(out_dir))            
+                        # download the fits data
+                        Neid.download(str(query_result_file), param["datalevel"], default_format, str(out_dir))            
+                    else:
+                        shutil.rmtree(str(out_dir))
             except Exception as e:
-                print(e)
+                print(f"Error downloading the data for {start_date}! {e}")
+            except:
+                print(f"Error downloading the data for {start_date}!")
                 
         start_date += delta_date
         
@@ -78,7 +82,6 @@ if __name__ == "__main__":
     parser.add_argument('root_dir', help='root directory to save the downloaded data files')
     parser.add_argument('start_date', help='start date yyyy-mm-dd of the data file to download')
     parser.add_argument('end_date', help='end date yyyy-mm-dd of the data file to download')
-    parser.add_argument('obj', help='object, e.g. Sun')
     parser.add_argument('swversion', help='software version that creates the input data, e.g. v1.1.2')
     parser.add_argument('level', help='data level, e.g. 0, 1 or 2')
 
@@ -90,5 +93,5 @@ if __name__ == "__main__":
     end_date = date.fromisoformat(args.end_date)
     
     # download data files
-    download_neid(root_dir, start_date, end_date, args.obj, args.swversion, args.level)
+    download_neid(root_dir, start_date, end_date, args.swversion, args.level)
     
