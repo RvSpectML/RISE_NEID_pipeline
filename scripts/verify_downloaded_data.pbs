@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -N verify_download_neid
+#PBS -N verify_neid
 #PBS -l nodes=1:ppn=1
 #PBS -l pmem=4gb
 #PBS -l walltime=47:00:00
@@ -10,6 +10,8 @@
 #PBS -W umask=002
 
 echo "Job $PBS_JOBID started on $(hostname) at $(date)"
+
+cd $PBS_O_WORKDIR
 
 # software version that creates the input data
 VERSION=v1.1.2
@@ -52,18 +54,37 @@ DATE=$START_DATE
 end_date_s=$(date -d "$END_DATE" +"%s")
 while [ $(date -d "$DATE" +"%s") -le $end_date_s ]
 do
+    reverify=0
     folder=${DATA_DIR}/${VERSION}/L${LEVEL}/$(date -d "$DATE" +"%Y/%m/%d")
     if [ -d "$folder" ]; then
-        if [ ! -f "${folder}/0_download_verified" ]; then
+        if [ -f "${folder}/0_download_verified" ]; then
+            echo "$DATE has been verified. Skip."
+        else
+            echo "Run verification on $DATE"
             julia --project=$JULIA_PROJECT $VERIFY_DOWNLOAD_SCRIPT ${folder} --checksums
-            if [ ! -f "${folder}/0_download_verified" ]; then
-                python ${ROOT_DIR}/code/download_neid_data.py ${DATA_DIR} ${START_DATE} ${END_DATE} ${VERSION} ${LEVEL}
+            
+            if [ -f "${folder}/0_download_verified" ]; then
+                echo "$DATE has been verified."
+            else
+                echo "Try to re-download the missing data for $DATE"
+                python ${ROOT_DIR}/code/download_neid_data.py ${DATA_DIR} ${DATE} ${DATE} ${VERSION} ${LEVEL}
+                reverify=1
             fi
         fi
     else
-        python ${ROOT_DIR}/code/download_neid_data.py ${DATA_DIR} ${START_DATE} ${END_DATE} ${VERSION} ${LEVEL}
+        echo "No data has been downloaded for $DATE. Try to download."
+        python ${ROOT_DIR}/code/download_neid_data.py ${DATA_DIR} ${DATE} ${DATE} ${VERSION} ${LEVEL}
+        reverify=1
     fi
-    DATE=$(date -d "$DATE 1 days")
+
+    if [ $reverify == "1" ]; then
+        julia --project=$JULIA_PROJECT $VERIFY_DOWNLOAD_SCRIPT ${folder} --checksums
+        if [ -f "${folder}/0_download_verified" ]; then
+            echo "$DATE has been verified."
+        fi
+    fi
+
+    DATE=$(date -d "$DATE 1 days" +"%Y-%m-%d")
 done
 
 echo "Job ended at $(date)"
