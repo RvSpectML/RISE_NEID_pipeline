@@ -1,7 +1,7 @@
 ---
 DATA_ROOT: /path/to/data
 INSTRUMENT: neid_solar
-INPUT_VERSION: v1.1.2
+INPUT_VERSION: 1.1
 USER_ID: my_username
 PIPELINE_ID: test1
 JULIA: /path/to/julia

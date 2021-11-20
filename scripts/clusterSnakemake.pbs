@@ -17,7 +17,7 @@
 ####  Your e-mail address and when you want e-mail
 #PBS -A open
 #PBS -M dus73@psu.edu
-#PBS -m bae
+#PBS -m ae
 
 ####  Join output and error; pass environment to job
 
@@ -39,14 +39,17 @@ if [ -d "$PBS_O_WORKDIR" ] ; then
     cd $PBS_O_WORKDIR
 fi
 
-source venv_snakemake/bin/activate
+source /gpfs/group/ebf11/default/RISE_NEID/venv_snakemake/bin/activate
+export PATH=$PATH:/gpfs/group/ebf11/default/sw/julia-1.6.2/bin
+export JULIA_DEPOT_PATH=/gpfs/group/ebf11/default/sw/.julia
+
 
 ####################################################################
 # Option 1.                                                        #
 # initiating snakemake and running workflow in a single submission #
 ####################################################################
 
-snakemake -c1
+snakemake -c1 --forcerun $(snakemake --list-input-changes)
 
 ####################################################################
 # Option 2.                                                        #
