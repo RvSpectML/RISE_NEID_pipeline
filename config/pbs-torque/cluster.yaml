@@ -3,7 +3,7 @@ __default__:
   nodes: 1
   ppn: 1
   pmem: "8000mb"
-  walltime: "1:00:00"
+  walltime: "24:00:00"
   account: "open"
   email: "dus73@psu.edu"
   mailon: "n"
