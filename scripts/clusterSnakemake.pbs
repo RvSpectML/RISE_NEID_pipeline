@@ -49,14 +49,14 @@ export JULIA_DEPOT_PATH=/gpfs/group/ebf11/default/sw/.julia
 # initiating snakemake and running workflow in a single submission #
 ####################################################################
 
-snakemake -c1 --forcerun $(snakemake --list-input-changes)
+snakemake -c1 --keep-going
 
 ####################################################################
 # Option 2.                                                        #
 # Initiating snakemake and running workflow in cluster mode        #
 ####################################################################
 
-# snakemake --profile config/pbs-torque/ --latency-wait 20 --groups manifest=group0 ccfs=group0 --group-components group0=5
+# snakemake --keep-going --profile config/pbs-torque/ --latency-wait 20 --groups manifest=group0 ccfs=group0 --group-components group0=5
 
 
 # Printing out job summary

@@ -37,9 +37,10 @@ rule manifest:
     output:
         f"{OUTPUT_DIR}/{{date}}/manifest.csv",
         f"{OUTPUT_DIR}/{{date}}/manifest_calib.csv"
+    version: config["MANIFEST_VERSION"]
     run:
         shell(f"if [ ! -d {OUTPUT_DIR}/{{wildcards.date}} ]; then mkdir {OUTPUT_DIR}/{{wildcards.date}}; fi")
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} -e 'target_subdir=\"{{input}}\"; output_dir=\"{OUTPUT_DIR}/{{wildcards.date}}\";  include(\"{NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{INPUT_VERSION}.jl\")'")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} -e 'target_subdir=\"{{input}}\"; output_dir=\"{OUTPUT_DIR}/{{wildcards.date}}\";  include(\"{NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{{version}}.jl\")'")
 
 
 rule ccfs:
@@ -50,12 +51,13 @@ rule ccfs:
         anchors=f"{NEID_SOLAR_SCRIPTS}/scripts/anchors_20210305.jld2"        
     output:
         f"{OUTPUT_DIR}/{{date}}/daily_ccfs_1.jld2"
+    version: config["CCFS_VERSION"]
     params:
         orders_first=config["params"]["orders_first"],
         orders_last=config["params"]["orders_last"],
         range_no_mask_change=config["params"]["range_no_mask_change"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} -t 1 {NEID_SOLAR_SCRIPTS}/examples/calc_order_ccfs_using_continuum_{INPUT_VERSION}.jl {{input.manifest}} {{output}} --line_list_filename {{input.linelist}} --sed_filename {{input.sed}}  --anchors_filename {{input.anchors}}  --orders_to_use={{params.orders_first}} {{params.orders_last}} --range_no_mask_change {{params.range_no_mask_change}}  --apply_continuum_normalization  --variable_mask_scale  --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} -t 1 {NEID_SOLAR_SCRIPTS}/examples/calc_order_ccfs_using_continuum_{{version}}.jl {{input.manifest}} {{output}} --line_list_filename {{input.linelist}} --sed_filename {{input.sed}}  --anchors_filename {{input.anchors}}  --orders_to_use={{params.orders_first}} {{params.orders_last}} --range_no_mask_change {{params.range_no_mask_change}}  --apply_continuum_normalization  --variable_mask_scale  --overwrite")
     
     
 rule daily_report:
@@ -64,6 +66,7 @@ rule daily_report:
     output:
         csv=f"{OUTPUT_DIR}/{{date}}/daily_rvs_1.csv",
         md=f"{OUTPUT_DIR}/{{date}}/daily_summary_1.md"
+    version: config["REPORT_VERSION"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_report_v{INPUT_VERSION}.jl {{input}} {{output.csv}} {{output.md}}")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_report_v{{version}}.jl {{input}} {{output.csv}} {{output.md}}")
         
