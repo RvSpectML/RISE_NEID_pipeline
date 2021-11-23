@@ -1,5 +1,5 @@
 cluster-config: "config/pbs-torque/cluster.yaml"
-cluster: "qsub -N {cluster.jobname} -l nodes={cluster.nodes}:ppn={cluster.ppn},pmem={cluster.pmem},walltime={cluster.walltime} -A {cluster.account} -M {cluster.email} -m {cluster.mailon} -j {cluster.jobout} -o {cluster.outdir} -V "
+cluster: "qsub -N {cluster.jobname} -l nodes={cluster.nodes}:ppn={cluster.ppn},pmem={cluster.pmem},walltime={cluster.walltime} -A {cluster.account} -M {cluster.email} -m {cluster.mailon} -j {cluster.jobout} -o {cluster.outdir} -V -W umask=002"
 jobs: 90
 verbose: true
 notemp: true

@@ -24,6 +24,7 @@
 #PBS -j oe
 #PBS -o logs/
 #PBS -V
+#PBS -W umask=002
 
 ##  Print the nodename(s) to the output in case needed for diagnostics,
 ##  or if you need information about the hardware after the job ran.
