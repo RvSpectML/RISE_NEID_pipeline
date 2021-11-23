@@ -27,23 +27,18 @@ DATA_DIR=${ROOT_DIR}/data/neid_solar
 
 # julia projects and scripts
 JULIA_PROJECT=/gpfs/group/ebf11/default/ebf11/neid_solar/code/NeidSolarScripts.jl
-VERIFY_DOWNLOAD_SCRIPT=/gpfs/group/ebf11/default/RISE_NEID_ebf/code/verify_download.jl
+VERIFY_DOWNLOAD_SCRIPT=/gpfs/group/ebf11/default/ebf11/neid_solar/code/NeidSolarScripts.jl/scripts/verify_download.jl
 
-# path to julia executable and JULIA_DEPOT_PATH
+# Path to julia executable and JULIA_DEPOT_PATH
+# Update the paths if you want to use your own julia installation and/or depot.
 export PATH=$PATH:/gpfs/group/ebf11/default/sw/julia-1.6.2/bin
 export JULIA_DEPOT_PATH=/gpfs/group/ebf11/default/sw/.julia
 
 # activate the python virtual environment for downloading
 source ${ROOT_DIR}/venv_download/bin/activate
 
-# get the start and end dates to download data for
-if [ -f  ${DATA_DIR}/${VERSION}/L${LEVEL}/0_max_date ]; then
-    LAST_DATE=$(head -1 ${DATA_DIR}/${VERSION}/L${LEVEL}/0_max_date)
-    START_DATE=$(date -d "$LAST_DATE 1 days" +"%Y-%m-%d")
-else
-    START_DATE="2020-01-01"
-fi
-
+# set the start and end dates to download data for
+START_DATE="2020-01-01"
 END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
 
 echo "START DATE: $START_DATE"

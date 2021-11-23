@@ -7,12 +7,8 @@ if necessary. Then
 $ qsub scripts/download_neid.pbs
 
 Downloaded data will be saved to DATA_DIR defined in the PBS script download_neid.pbs, 
-grouped by date, and the output logs will be saved to the directory logs/.
-The latest date for which the NEID data has been downloaded is recorded in the file 
-<DATA_DIR>/0_max_date. The PBS script download_neid.pbs
-checks that latest date, and it sets the start date of the new query to be the next day of that date 
-and sets the end date to be yesterday. It then calls code/download_neid_data.py to download the data
-between the start and end dates.
+grouped by date, and the output logs will be saved to the directory logs/. This PBS script 
+calls code/download_neid_data.py to download the data between the start and end dates.
 
 # Verify downloaded data
 

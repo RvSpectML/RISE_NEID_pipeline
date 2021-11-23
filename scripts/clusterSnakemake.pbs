@@ -40,6 +40,9 @@ if [ -d "$PBS_O_WORKDIR" ] ; then
 fi
 
 source /gpfs/group/ebf11/default/RISE_NEID/venv_snakemake/bin/activate
+
+# Path to julia executable and JULIA_DEPOT_PATH.
+# Update the paths if you want to use your own julia installation and/or depot.
 export PATH=$PATH:/gpfs/group/ebf11/default/sw/julia-1.6.2/bin
 export JULIA_DEPOT_PATH=/gpfs/group/ebf11/default/sw/.julia
 

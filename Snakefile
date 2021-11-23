@@ -13,11 +13,12 @@ NEID_SOLAR_SCRIPTS = config["NEID_SOLAR_SCRIPTS"]
 import os
 import shutil
 from pathlib import Path
+from datetime import date
 
 # copy over the config file
 CONFIG_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/config/{USER_ID}/{PIPELINE_ID}/"
 Path(CONFIG_DIR).mkdir(parents=True, exist_ok=True)
-shutil.copyfile(CONFIG_FILE, f"{CONFIG_DIR}/config_{PIPELINE_ID}.yaml")
+shutil.copyfile(CONFIG_FILE, f"{CONFIG_DIR}/config_{PIPELINE_ID}_{date.today()}.yaml")
 
 # get the input and output directories
 INPUT_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/L{LEVEL}"

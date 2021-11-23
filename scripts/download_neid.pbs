@@ -26,14 +26,8 @@ DATA_DIR=${ROOT_DIR}/data/neid_solar
 # activate the python virtual environment
 source ${ROOT_DIR}/venv_download/bin/activate
 
-# get the start and end dates to download data for
-if [ -f  ${DATA_DIR}/${VERSION}/L${LEVEL}/0_max_date ]; then
-    LAST_DATE=$(head -1 ${DATA_DIR}/${VERSION}/L${LEVEL}/0_max_date)
-    START_DATE=$(date -d "$LAST_DATE 1 days" +"%Y-%m-%d")
-else
-    START_DATE="2020-01-01"
-fi
-
+# set the start and end dates to download data for
+START_DATE="2020-01-01"
 END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
 
 echo "START DATE: $START_DATE"
