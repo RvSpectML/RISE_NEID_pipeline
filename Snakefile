@@ -56,7 +56,7 @@ rule ccfs:
     params:
         orders_first=config["params"]["orders_first"],
         orders_last=config["params"]["orders_last"],
-        range_no_mask_change=config["params"]["range_no_mask_change"]
+        range_no_mask_change=config["params"]["range_no_mask_change"],
         calc_order_ccfs_flags=config["params"]["calc_order_ccfs_flags"]
     run:
         shell(f"julia --project={NEID_SOLAR_SCRIPTS} -t 1 {NEID_SOLAR_SCRIPTS}/examples/calc_order_ccfs_using_continuum_{{version}}.jl {{input.manifest}} {{output}} --line_list_filename {{input.linelist}} --sed_filename {{input.sed}}  --anchors_filename {{input.anchors}}  --orders_to_use={{params.orders_first}} {{params.orders_last}} --range_no_mask_change {{params.range_no_mask_change}} {{params.calc_order_ccfs_flags}} --overwrite")

@@ -13,5 +13,5 @@ params:
   orders_first: 56
   orders_last: 108
   range_no_mask_change: 6.0
-  calc_order_ccfs_flags: "--apply_continuum_normalization --variable_mask_scale"
+  calc_order_ccfs_flags: --apply_continuum_normalization --variable_mask_scale
 
