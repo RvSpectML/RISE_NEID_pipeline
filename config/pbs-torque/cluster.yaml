@@ -5,7 +5,7 @@ __default__:
   pmem: "8000mb"
   walltime: "24:00:00"
   account: "open"
-  email: "dus73@psu.edu"
+  email: "ebf11@psu.edu"
   mailon: "n"
   jobout: "oe"
   outdir: "logs/"

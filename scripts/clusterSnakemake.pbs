@@ -16,8 +16,9 @@
 
 ####  Your e-mail address and when you want e-mail
 #PBS -A open
-#PBS -M dus73@psu.edu
-#PBS -m ae
+##PBS -M dus73@psu.edu
+#PBS -M ebf11@psu.edu
+#PBS -m abe
 
 ####  Join output and error; pass environment to job
 
@@ -40,12 +41,15 @@ if [ -d "$PBS_O_WORKDIR" ] ; then
     cd $PBS_O_WORKDIR
 fi
 
-source /gpfs/group/ebf11/default/RISE_NEID/venv_snakemake/bin/activate
+#source /gpfs/group/ebf11/default/RISE_NEID/venv_snakemake/bin/activate
+source /gpfs/group/ebf11/default/pipeline/shared/venv_snakemake/bin/activate
 
-# Path to julia executable and JULIA_DEPOT_PATH.
-# Update the paths if you want to use your own julia installation and/or depot.
-export PATH=$PATH:/gpfs/group/ebf11/default/sw/julia-1.6.2/bin
-export JULIA_DEPOT_PATH=/gpfs/group/ebf11/default/sw/.julia
+# Path to julia executable to be used to verify downloads
+export PATH=/gpfs/group/ebf11/default/sw/julia-1.6.2/bin:$PATH
+# Path to julia depot _for user submitting the job_.  
+# Do NOT try to have multiple users share one julia depot!
+# Keep commented out if your julia depot is in ~/.julia (good to make this a symlink, so not in home directory)
+# export JULIA_DEPOT_PATH=/gpfs/group/ebf11/default/sw/.julia  # For Danying's depot
 
 
 ####################################################################
@@ -61,8 +65,7 @@ export JULIA_DEPOT_PATH=/gpfs/group/ebf11/default/sw/.julia
 # update group0 (number of targets grouped together) if necessary. #
 ####################################################################
 
-snakemake --keep-going --profile config/pbs-torque/ --latency-wait 20 --groups manifest=group0 ccfs=group0 daily_report=group0 --group-components group0=5
-
+snakemake --keep-going --profile config/pbs-torque/ --latency-wait 20 --groups manifest=group0 ccfs=group0 daily_report=group0 --group-components group0=5 --forcerun manifest
 
 # Printing out job summary
 qstat -f $PBS_JOBID

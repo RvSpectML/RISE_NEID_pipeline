@@ -9,6 +9,7 @@ LEVEL = config["LEVEL"]
 USER_ID = config["USER_ID"]
 PIPELINE_ID = config["PIPELINE_ID"]
 NEID_SOLAR_SCRIPTS = config["NEID_SOLAR_SCRIPTS"]
+PYROHELIO_DIR = config["PYROHELIO_DIR"]
 
 import os
 import shutil
@@ -44,13 +45,13 @@ rule manifest:
     run:
         shell(f"if [ ! -d {OUTPUT_DIR}/{{wildcards.date}} ]; then mkdir {OUTPUT_DIR}/{{wildcards.date}}; fi")
         shell(f"julia --project={NEID_SOLAR_SCRIPTS} -e 'target_subdir=\"{{input}}\"; output_dir=\"{OUTPUT_DIR}/{{wildcards.date}}\";  include(\"{NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{{version}}.jl\")'")
-
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{{version}}.jl  {INPUT_DIR} {OUTPUT_DIR} --subdir {{wildcards.date}} --pyrohelio {PYROHELIO_DIR} ") 
 
 rule ccfs:
     input:
         manifest=f"{OUTPUT_DIR}/{{date}}/manifest.csv",
         linelist=f"{NEID_SOLAR_SCRIPTS}/scripts/linelist_20210208.csv",
-        sed=f"{NEID_SOLAR_SCRIPTS}/data/neidMaster_HR_SmoothLampSED_20210101.fits",
+        #sed=f"{NEID_SOLAR_SCRIPTS}/data/neidMaster_HR_SmoothLampSED_20210101.fits",
         anchors=f"{NEID_SOLAR_SCRIPTS}/scripts/anchors_20210305.jld2"        
     output:
         f"{OUTPUT_DIR}/{{date}}/daily_ccfs_1.jld2"
@@ -61,7 +62,7 @@ rule ccfs:
         range_no_mask_change=config["params"]["range_no_mask_change"],
         calc_order_ccfs_flags=config["params"]["calc_order_ccfs_flags"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} -t 1 {NEID_SOLAR_SCRIPTS}/examples/calc_order_ccfs_using_continuum_{{version}}.jl {{input.manifest}} {{output}} --line_list_filename {{input.linelist}} --sed_filename {{input.sed}}  --anchors_filename {{input.anchors}}  --orders_to_use={{params.orders_first}} {{params.orders_last}} --range_no_mask_change {{params.range_no_mask_change}} {{params.calc_order_ccfs_flags}} --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} -t 1 {NEID_SOLAR_SCRIPTS}/examples/calc_order_ccfs_using_continuum_{{version}}.jl {{input.manifest}} {{output}} --line_list_filename {{input.linelist}}  --anchors_filename {{input.anchors}}  --orders_to_use={{params.orders_first}} {{params.orders_last}} --range_no_mask_change {{params.range_no_mask_change}} {{params.calc_order_ccfs_flags}} --overwrite")
     
     
 rule daily_report:
