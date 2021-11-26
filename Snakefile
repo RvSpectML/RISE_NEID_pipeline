@@ -25,6 +25,7 @@ DATES, = glob_wildcards(f"{INPUT_DIR}/{{date}}/0_download_verified")
 
 # copy over the config file
 onstart:
+    Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
     CONFIG_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/config/{USER_ID}/{PIPELINE_ID}/"
     Path(CONFIG_DIR).mkdir(parents=True, exist_ok=True)
     shutil.copyfile(CONFIG_FILE, f"{CONFIG_DIR}/config_{PIPELINE_ID}_{datetime.now()}.yaml")
@@ -44,7 +45,7 @@ rule manifest:
     version: config["MANIFEST_VERSION"]
     run:
         shell(f"if [ ! -d {OUTPUT_DIR}/{{wildcards.date}} ]; then mkdir {OUTPUT_DIR}/{{wildcards.date}}; fi")
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} -e 'target_subdir=\"{{input}}\"; output_dir=\"{OUTPUT_DIR}/{{wildcards.date}}\";  include(\"{NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{{version}}.jl\")'")
+        #shell(f"julia --project={NEID_SOLAR_SCRIPTS} -e 'target_subdir=\"{{input}}\"; output_dir=\"{OUTPUT_DIR}/{{wildcards.date}}\";  include(\"{NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{{version}}.jl\")'")
         shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{{version}}.jl  {INPUT_DIR} {OUTPUT_DIR} --subdir {{wildcards.date}} --pyrohelio {PYROHELIO_DIR} ") 
 
 rule ccfs:

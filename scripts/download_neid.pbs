@@ -14,6 +14,7 @@
 echo "Job $PBS_JOBID started on $(hostname) at $(date)"
 
 # software version that creates the input data
+#VERSION=v1.1.1
 VERSION=v1.1.2
 
 # data level
@@ -30,7 +31,7 @@ DATA_DIR=${ROOT_DIR}/data/neid_solar
 source ${ROOT_DIR}/shared/venv_download/bin/activate
 
 # set the start and end dates to download data for
-START_DATE="2021-02-02"
+START_DATE="2021-01-01"
 #END_DATE="2021-02-01"
 END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
 
