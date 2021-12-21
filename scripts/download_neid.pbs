@@ -3,8 +3,9 @@
 #PBS -l nodes=1:ppn=1
 #PBS -l pmem=4gb
 #PBS -l walltime=47:59:59
-#PBS -A ebf11_c_g_vc_default
-#PBS -q hprc
+#PBS -A open
+##PBS -A ebf11_c_g_vc_default
+##PBS -q hprc
 #PBS -j oe
 #PBS -M ebf11@psu.edu
 #PBS -m abe
