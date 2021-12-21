@@ -3,6 +3,7 @@ configfile: CONFIG_FILE
 
 # retrieve directories from config file
 DATA_ROOT = config["DATA_ROOT"]
+DATA_L0_ROOT = config["DATA_L0_ROOT"]
 INSTRUMENT = config["INSTRUMENT"]
 INPUT_VERSION = config["INPUT_VERSION"]
 LEVEL = config["LEVEL"]
@@ -10,6 +11,7 @@ USER_ID = config["USER_ID"]
 PIPELINE_ID = config["PIPELINE_ID"]
 NEID_SOLAR_SCRIPTS = config["NEID_SOLAR_SCRIPTS"]
 PYROHELIO_DIR = config["PYROHELIO_DIR"]
+NEXSCI_ID = config["NEXSCI_ID"]
 
 import os
 import shutil
@@ -18,10 +20,11 @@ from datetime import datetime
 
 # get the input and output directories
 INPUT_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/L{LEVEL}"
+INPUT_L0_DIR = f"{DATA_L0_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/L0"
 OUTPUT_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}"
 
 # get the dates
-DATES, = glob_wildcards(f"{INPUT_DIR}/{{date}}/0_download_verified")
+DATES, = glob_wildcards(f"{INPUT_DIR}/{{date}}/0_download_verified", followlinks=True)
 
 # copy over the config file
 onstart:
@@ -29,24 +32,34 @@ onstart:
     CONFIG_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/config/{USER_ID}/{PIPELINE_ID}/"
     Path(CONFIG_DIR).mkdir(parents=True, exist_ok=True)
     shutil.copyfile(CONFIG_FILE, f"{CONFIG_DIR}/config_{PIPELINE_ID}_{datetime.now()}.yaml")
+    shell(f"echo Dates with verified downloads: {{DATES}}")
 
 
 rule all:
     input:
+        expand(f"{OUTPUT_DIR}/{{date}}/pyrheliometer.csv", date=DATES),
         expand(f"{OUTPUT_DIR}/{{date}}/daily_rvs_1.csv", date=DATES)
 
+rule pyro:
+    input:
+        f"{INPUT_DIR}/{{date}}/meta.csv"
+    output:
+        f"{OUTPUT_DIR}/{{date}}/pyrheliometer.csv"
+    run: 
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_pyrheliometer_daily.jl {{input}} --nexsci_login_filename {NEXSCI_ID} --pyrheliometer_dir {PYROHELIO_DIR} --work_dir {INPUT_L0_DIR}/{{wildcards.date}} --output {{output}}")
 
 rule manifest:
     input:
-        f"{INPUT_DIR}/{{date}}/"
+        manifest_dir=f"{INPUT_DIR}/{{date}}/",
+        pyrheliometer=f"{OUTPUT_DIR}/{{date}}/pyrheliometer.csv"
     output:
         f"{OUTPUT_DIR}/{{date}}/manifest.csv",
         f"{OUTPUT_DIR}/{{date}}/manifest_calib.csv"
     version: config["MANIFEST_VERSION"]
     run:
         shell(f"if [ ! -d {OUTPUT_DIR}/{{wildcards.date}} ]; then mkdir {OUTPUT_DIR}/{{wildcards.date}}; fi")
-        #shell(f"julia --project={NEID_SOLAR_SCRIPTS} -e 'target_subdir=\"{{input}}\"; output_dir=\"{OUTPUT_DIR}/{{wildcards.date}}\";  include(\"{NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{{version}}.jl\")'")
         shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{{version}}.jl  {INPUT_DIR} {OUTPUT_DIR} --subdir {{wildcards.date}} --pyrohelio {PYROHELIO_DIR} ") 
+        #shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{{version}}.jl  {INPUT_DIR} {OUTPUT_DIR} --subdir {{wildcards.date}} --pyrheliometer {{input.pyrheliometer}} ") 
 
 rule ccfs:
     input:
