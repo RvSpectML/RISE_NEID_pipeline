@@ -53,12 +53,16 @@ def download_neid(root_dir, start_date, end_date, swversion, level):
                     df = pd.read_csv(str(query_result_file_all))
                     
                     # filter for the swversion
-                    df_version = df[df['swversion']==swversion]  
+                    if int(level) > 0: 
+                        df_version = df[df['swversion']==swversion]  
                     
-                    if len(df_version.index) > 0:
+                    if (len(df.index) > 0 ):
                         # save to meta.csv
                         query_result_file = out_dir.joinpath("meta.csv")
-                        df_version.to_csv(str(query_result_file))    
+                        if int(level) > 0:
+                            df_version.to_csv(str(query_result_file))    
+                        else:
+                            df.to_csv(str(query_result_file))    
         
                         # remove meta_all.csv
                         query_result_file_all.unlink()
