@@ -97,7 +97,8 @@ rule calc_ccfs:
 rule calc_rvs:
     input:
         ccfs=f"{OUTPUT_DIR}/{{date}}/daily_ccfs_3.jld2",
-        template=f"{NEID_SOLAR_SCRIPTS}/scripts/template.jld2"
+        template=config["params"]["ccf_template"]
+        #template=f"{NEID_SOLAR_SCRIPTS}/scripts/template.jld2"
     output:
         f"{OUTPUT_DIR}/{{date}}/daily_rvs_3.csv"
     version: config["RVS_VERSION"]
