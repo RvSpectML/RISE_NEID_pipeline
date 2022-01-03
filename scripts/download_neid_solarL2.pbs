@@ -15,6 +15,7 @@
 echo "Job $PBS_JOBID started on $(hostname) at $(date)"
 
 # software version that creates the input data
+#VERSION=v1.1.0
 #VERSION=v1.1.1
 VERSION=v1.1.2
 
@@ -32,8 +33,9 @@ DATA_DIR=${ROOT_DIR}/data/neid_solar
 source ${ROOT_DIR}/shared/venv_download/bin/activate
 
 # set the start and end dates to download data for
-START_DATE="2021-01-01"
-#END_DATE="2021-02-01"
+#START_DATE="2021-01-01"
+START_DATE="2021-12-29"
+#END_DATE="2022-12-31"
 END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
 
 echo "START DATE: $START_DATE"
@@ -41,6 +43,10 @@ echo "END DATE: $END_DATE"
 
 # download data
 python ${ROOT_DIR}/shared/code/download_neid_data.py ${DATA_DIR} ${START_DATE} ${END_DATE} ${VERSION} ${LEVEL}
+
+#python ${ROOT_DIR}/shared/code/download_neid_data.py ${DATA_DIR} ${START_DATE} ${END_DATE} 1.1.0 ${LEVEL}
+#python ${ROOT_DIR}/shared/code/download_neid_data.py ${DATA_DIR} ${START_DATE} ${END_DATE} 1.1.1 ${LEVEL}
+#python ${ROOT_DIR}/shared/code/download_neid_data.py ${DATA_DIR} ${START_DATE} ${END_DATE} 1.1.2 ${LEVEL}
 
 echo "Job ended at $(date)"
 

@@ -31,8 +31,8 @@ DATA_DIR=/gpfs/scratch/ebf11/data_tmp/neid_solar
 source ${ROOT_DIR}/shared/venv_download/bin/activate
 
 # set the start and end dates to download data for
-START_DATE="2021-11-01"
-#END_DATE="2021-11-03"
+START_DATE="2021-12-29"
+#END_DATE="2022-12-31"
 END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
 
 echo "START DATE: $START_DATE"
