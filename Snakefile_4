@@ -1,4 +1,5 @@
-CONFIG_FILE = "config/config.yaml"
+SUFFIX = "_4"
+CONFIG_FILE = f"config/config{SUFFIX}.yaml"
 configfile: CONFIG_FILE
 
 # retrieve directories from config file
@@ -45,12 +46,12 @@ rule all:
     input:
         expand(f"{OUTPUT_DIR}/{{date}}/pyrheliometer.csv", date=DATES),
         expand(f"{OUTPUT_DIR}/{{date}}/manifest.csv", date=DATES),
-        #expand(f"{OUTPUT_DIR}/{{date}}/daily_ccfs_1.jld2", date=DATES),
-        #expand(f"{OUTPUT_DIR}/{{date}}/daily_rvs_1.csv", date=DATES),
-        f"{OUTPUT_DIR}/combined_rvs_2.csv",
-        expand(f"{OUTPUT_DIR}/{{date}}/daily_summary_2.toml",date=DATES),
-        #expand(f"{OUTPUT_DIR}/{{year}}/{{month}}/monthly_summary_1.csv",year=YEARS,month=MONTHS), # TODO: Figure out how to impelement 
-        f"{OUTPUT_DIR}/summary_2.csv"
+        #expand(f"{OUTPUT_DIR}/{{date}}/daily_ccfs{SUFFIX}.jld2", date=DATES),
+        #expand(f"{OUTPUT_DIR}/{{date}}/daily_rvs{SUFFIX}.csv", date=DATES),
+        f"{OUTPUT_DIR}/combined_rvs{SUFFIX}.csv",
+        expand(f"{OUTPUT_DIR}/{{date}}/daily_summary{SUFFIX}.toml",date=DATES),
+        #expand(f"{OUTPUT_DIR}/{{year}}/{{month}}/monthly_summary{SUFFIX}.csv",year=YEARS,month=MONTHS), # TODO: Figure out how to impelement 
+        f"{OUTPUT_DIR}/summary{SUFFIX}.csv"
 
 rule prep_pyro:
     input:
@@ -78,12 +79,12 @@ rule calc_ccfs:
     input:
         manifest=f"{OUTPUT_DIR}/{{date}}/manifest.csv",
         linelist=config["params"]["linelist"],
-        #linelist=f"{NEID_SOLAR_SCRIPTS}/scripts/linelist_20210208.csv",
+        #linelist=f"{NEID_SOLAR_SCRIPTS}/scripts/linelist_20210208.csv",              # Moved to config
         #sed=f"{NEID_SOLAR_SCRIPTS}/data/neidMaster_HR_SmoothLampSED_20210101.fits",  # No longer needed, now that blaze is embedded in L2 files
         anchors=config["params"]["anchors"]
-        #anchors=f"{NEID_SOLAR_SCRIPTS}/scripts/anchors_20210305.jld2"                 # TODO: Consider regenerating with DRP 1.1.*
+        #anchors=f"{NEID_SOLAR_SCRIPTS}/scripts/anchors_20210305.jld2"                #  Moved to config
     output:
-        f"{OUTPUT_DIR}/{{date}}/daily_ccfs_2.jld2"
+        f"{OUTPUT_DIR}/{{date}}/daily_ccfs{SUFFIX}.jld2"
     version: config["CCFS_VERSION"]
     params:
         orders_first=config["params"]["orders_first"],
@@ -96,60 +97,61 @@ rule calc_ccfs:
     
 rule calc_rvs:
     input:
-        ccfs=f"{OUTPUT_DIR}/{{date}}/daily_ccfs_2.jld2",
+        ccfs=f"{OUTPUT_DIR}/{{date}}/daily_ccfs{SUFFIX}.jld2",
         template=config["params"]["ccf_template"]
         #template=f"{NEID_SOLAR_SCRIPTS}/scripts/template.jld2"
     output:
-        f"{OUTPUT_DIR}/{{date}}/daily_rvs_2.csv"
+        f"{OUTPUT_DIR}/{{date}}/daily_rvs{SUFFIX}.csv"
     version: config["RVS_VERSION"]
     params:
         daily_rvs_flags=config["params"]["daily_rvs_flags"]
     run:
         #shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_rvs_v{{version}}.jl {{input.ccfs}} {{output}} {{params.daily_rvs_flags}} ")
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_rvs_v{{version}}.jl {{input.ccfs}} {{output}} --template_file {{input.template}} {{params.daily_rvs_flags}} ")
+        #shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_rvs_v{{version}}.jl {{input.ccfs}} {{output}} --template_file {{input.template}} {{params.daily_rvs_flags}} ")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_rvs_v{{version}}.jl {{input.ccfs}} {{output}} {{input.template}} {{params.daily_rvs_flags}} ")
 
 rule report_daily:
     input:
-        rvs=f"{OUTPUT_DIR}/{{date}}/daily_rvs_2.csv"
+        rvs=f"{OUTPUT_DIR}/{{date}}/daily_rvs{SUFFIX}.csv"
         #template=f"{NEID_SOLAR_SCRIPTS}/scripts/template.jld2"
         #manifest=f"{OUTPUT_DIR}/{{date}}/manifest.csv"  # Not implemented yet, but eventually will use extra information from manifest file
     output:
-        f"{OUTPUT_DIR}/{{date}}/daily_summary_2.toml"
+        f"{OUTPUT_DIR}/{{date}}/daily_summary{SUFFIX}.toml"
     version: config["REPORT_DAILY_VERSION"]
     run:
         shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_report_v{{version}}.jl {{input.rvs}} {{output}} ")
 
 rule report_monthly:
     input:
-        #expand(f"{OUTPUT_DIR}/{{year}}/{{month}}/{{day}}/daily_summary_1.toml",year=YEARS,month=MONTHS,day=DAYS)   # Not implemented yet, but eventually could look up info from these.  Need way to exclude days with no data
-         glob_wildcards(f"{OUTPUT_DIR}/{{year}}/{{month}}/{{day}}/daily_summary_2.toml", followlinks=True)
+        #expand(f"{OUTPUT_DIR}/{{year}}/{{month}}/{{day}}/daily_summary{SUFFIX}.toml",year=YEARS,month=MONTHS,day=DAYS)   # Not implemented yet, but eventually could look up info from these.  Need way to exclude days with no data
+         glob_wildcards(f"{OUTPUT_DIR}/{{year}}/{{month}}/{{day}}/daily_summary{SUFFIX}.toml", followlinks=True)
     output:
-        f"{OUTPUT_DIR}/{{year}}/{{month}}/monthly_summary_2.csv"
+        f"{OUTPUT_DIR}/{{year}}/{{month}}/monthly_summary{SUFFIX}.csv"
     version: config["REPORT_MONTHLY_VERSION"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR}/{{year}}/{{month}} {{output}} --input_filename daily_summary_2.toml --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR}/{{year}}/{{month}} {{output}} --input_filename daily_summary{SUFFIX}.toml --overwrite")
 
 rule report_all:
     input:
-        expand(f"{OUTPUT_DIR}/{{date}}/daily_summary_2.toml",date=DATES)
+        daily_summary = expand(f"{OUTPUT_DIR}/{{date}}/daily_summary{SUFFIX}.toml",date=DATES)
     output:
-        good=f"{OUTPUT_DIR}/summary_2.csv",
-        bad=f"{OUTPUT_DIR}/summary_incl_bad_2.csv"
+        good=f"{OUTPUT_DIR}/summary{SUFFIX}.csv",
+        bad=f"{OUTPUT_DIR}/summary_incl_bad{SUFFIX}.csv"
     version: config["REPORT_ALL_VERSION"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} {{output.good}} --input_filename daily_summary_2.toml --exclude_filename {EXCLUDE_FILENAME} --overwrite")
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} {{output.bad}}  --input_filename daily_summary_2.toml --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} {{output.good}} --input_filename {{input.daily_summary}} --exclude_filename {EXCLUDE_FILENAME} --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} {{output.bad}}  --input_filename {{input.daily_summary}} --overwrite")
 
 rule combine_rvs:
     input:
-        expand(f"{OUTPUT_DIR}/{{date}}/daily_rvs_2.csv",date=DATES)
+        daily_rvs = expand(f"{OUTPUT_DIR}/{{date}}/daily_rvs{SUFFIX}.csv",date=DATES)
     output:
-        good=f"{OUTPUT_DIR}/combined_rvs_2.csv",
-        bad=f"{OUTPUT_DIR}/combined_rvs_incl_bad_2.csv"
+        good=f"{OUTPUT_DIR}/combined_rvs{SUFFIX}.csv",
+        bad=f"{OUTPUT_DIR}/combined_rvs_incl_bad{SUFFIX}.csv"
     version: config["COMBINE_RVS_VERSION"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_1.0.jl {OUTPUT_DIR} {{output.good}} --input_filename daily_rvs_2.csv --exclude_filename {EXCLUDE_FILENAME} --overwrite")
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_1.0.jl {OUTPUT_DIR} {{output.bad}}  --input_filename daily_rvs_2.csv --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} {{output.good}} --input_filename {{input.daily_rvs}} --exclude_filename {EXCLUDE_FILENAME} --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} {{output.bad}}  --input_filename {{input.daily_rvs}} --overwrite")
 
 
 

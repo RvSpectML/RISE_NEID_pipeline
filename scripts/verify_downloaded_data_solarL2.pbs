@@ -3,8 +3,9 @@
 #PBS -l nodes=1:ppn=1
 #PBS -l pmem=4gb
 #PBS -l walltime=47:00:00
-#PBS -A ebf11_c_g_vc_default
-#PBS -q hprc
+#PBS -A open
+##PBS -A ebf11_c_g_vc_default
+##PBS -q hprc
 #PBS -j oe
 #PBS -o logs/
 #PBS -W umask=002
@@ -20,25 +21,33 @@ VERSION=v1.1.2
 LEVEL=2
 
 # root directory of the RISE_NEID pipeline
-ROOT_DIR=/gpfs/group/ebf11/default/RISE_NEID
+#ROOT_DIR=/gpfs/group/ebf11/default/RISE_NEID
+ROOT_DIR=/gpfs/group/ebf11/default/pipeline
 
 # root directory for data
 DATA_DIR=${ROOT_DIR}/data/neid_solar
 
 # julia projects and scripts
-JULIA_PROJECT=/gpfs/group/ebf11/default/ebf11/neid_solar/code/NeidSolarScripts.jl
-VERIFY_DOWNLOAD_SCRIPT=/gpfs/group/ebf11/default/ebf11/neid_solar/code/NeidSolarScripts.jl/scripts/verify_download.jl
+#JULIA_PROJECT=/gpfs/group/ebf11/default/ebf11/neid_solar/code/NeidSolarScripts.jl
+JULIA_PROJECT=${ROOT_DIR}/NeidSolarScripts.jl
+#VERIFY_DOWNLOAD_SCRIPT=/gpfs/group/ebf11/default/ebf11/neid_solar/code/NeidSolarScripts.jl/scripts/verify_download.jl
+VERIFY_DOWNLOAD_SCRIPT=${JULIA_PROJECT}/scripts/verify_download.jl
+DOWNLOAD_SCRIPT=${ROOT_DIR}/shared/code/download_neid_data.py 
 
-# Path to julia executable and JULIA_DEPOT_PATH
-# Update the paths if you want to use your own julia installation and/or depot.
-export PATH=$PATH:/gpfs/group/ebf11/default/sw/julia-1.6.2/bin
-export JULIA_DEPOT_PATH=/gpfs/group/ebf11/default/sw/.julia
+# Path to julia executable to be used to verify downloads
+export PATH=/gpfs/group/ebf11/default/sw/julia-1.6.2/bin:$PATH
+# Path to julia depot _for user submitting the job_.  
+# Do NOT try to have multiple users share one julia depot!
+# Keep commented out if your julia depot is in ~/.julia (good to make this a symlink, so not in home directory)
+# export JULIA_DEPOT_PATH=/gpfs/group/ebf11/default/sw/.julia  # For Danying's depot
 
 # activate the python virtual environment for downloading
-source ${ROOT_DIR}/venv_download/bin/activate
+source ${ROOT_DIR}/shared/venv_download/bin/activate
 
 # set the start and end dates to download data for
-START_DATE="2020-01-01"
+#START_DATE="2021-01-01"
+START_DATE="2021-12-29"
+#END_DATE="2022-12-31"
 END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
 
 echo "START DATE: $START_DATE"
@@ -62,13 +71,15 @@ do
                 echo "$DATE has been verified."
             else
                 echo "Try to re-download the missing data for $DATE"
-                python ${ROOT_DIR}/code/download_neid_data.py ${DATA_DIR} ${DATE} ${DATE} ${VERSION} ${LEVEL}
+                #python ${ROOT_DIR}/shared/code/download_neid_data.py ${DATA_DIR} ${DATE} ${DATE} ${VERSION} ${LEVEL}
+                python ${DOWNLOAD_SCRIPT} ${DATA_DIR} ${DATE} ${DATE} ${VERSION} ${LEVEL}
                 reverify=1
             fi
         fi
     else
         echo "No data has been downloaded for $DATE. Try to download."
-        python ${ROOT_DIR}/code/download_neid_data.py ${DATA_DIR} ${DATE} ${DATE} ${VERSION} ${LEVEL}
+        #python ${ROOT_DIR}/shared/code/download_neid_data.py ${DATA_DIR} ${DATE} ${DATE} ${VERSION} ${LEVEL}
+        python ${DOWNLOAD_SCRIPT} ${DATA_DIR} ${DATE} ${DATE} ${VERSION} ${LEVEL}
         reverify=1
     fi
 

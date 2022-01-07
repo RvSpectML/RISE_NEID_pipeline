@@ -38,7 +38,7 @@ def download_neid(root_dir, start_date, end_date, swversion, level):
                     query_result_file = out_dir.joinpath("meta_redownload.csv")
                     
                     # download the fits data
-                    Neid.download(str(query_result_file), param["datalevel"], default_format, str(out_dir)) 
+                    #Neid.download(str(query_result_file), param["datalevel"], default_format, str(out_dir)) 
                     
                     # remove meta_redonwload.csv
                     query_result_file.unlink()
@@ -68,7 +68,7 @@ def download_neid(root_dir, start_date, end_date, swversion, level):
                         query_result_file_all.unlink()
 
                         # download the fits data
-                        Neid.download(str(query_result_file), param["datalevel"], default_format, str(out_dir))            
+                        #Neid.download(str(query_result_file), param["datalevel"], default_format, str(out_dir))            
                     else:
                         shutil.rmtree(str(out_dir))
             except Exception as e:
