@@ -47,6 +47,7 @@ source /gpfs/group/ebf11/default/pipeline/shared/venv_snakemake/bin/activate
 
 # Path to julia executable to be used to verify downloads
 export PATH=/gpfs/group/ebf11/default/sw/julia-1.6.2/bin:$PATH
+#export PATH=/gpfs/group/RISE/sw7/julia-1.7.0/julia-1.7.0/bin:$PATH
 # Path to julia depot _for user submitting the job_.  
 # Do NOT try to have multiple users share one julia depot!
 # Keep commented out if your julia depot is in ~/.julia (good to make this a symlink, so not in home directory)

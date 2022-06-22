@@ -121,6 +121,5 @@ venv_snakemake/
 logs/
 .snakemake/
 
-config/config.yaml
 nexsci_id.toml
 neidadmincookie.txt
