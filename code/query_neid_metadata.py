@@ -81,7 +81,7 @@ def download_neid(root_dir, start_date, end_date, swversion, level):
 # start of the program    
 if __name__ == "__main__":
     # define the arguments
-    parser = argparse.ArgumentParser(description='Download data from NEID archive.')
+    parser = argparse.ArgumentParser(description='Query meta data from NEID archive.')
     parser.add_argument('root_dir', help='root directory to save the downloaded data files')
     parser.add_argument('start_date', help='start date yyyy-mm-dd of the data file to download')
     parser.add_argument('end_date', help='end date yyyy-mm-dd of the data file to download')

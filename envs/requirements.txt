@@ -2,3 +2,4 @@ astropy==4.1
 pyneid==1.0.5
 backports-datetime-fromisoformat==1.0.0
 pandas==1.1.5
+snakemake==6.9.1

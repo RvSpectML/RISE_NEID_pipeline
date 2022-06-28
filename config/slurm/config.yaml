@@ -1,0 +1,5 @@
+cluster-config: "config/slurm/cluster.yaml"
+cluster: "sbatch --job-name={cluster.job-name} -A {cluster.account} -p {cluster.partition} -t {cluster.time} -N {cluster.nodes} -n {cluster.ntasks} --mem={cluster.mem} -o {cluster.outdir}"
+jobs: 90
+verbose: true
+notemp: true

@@ -1,107 +1,112 @@
-SUFFIX = "_4"
-CONFIG_FILE = f"config/config.yaml"
-configfile: CONFIG_FILE
-
 # retrieve directories from config file
-DATA_ROOT = config["DATA_ROOT"]
-DATA_L0_ROOT = config["DATA_L0_ROOT"]
+PIPELINE_DIR = config["pipeline_dir"]
+NEID_SOLAR_SCRIPTS = PIPELINE_DIR + "/" + config["NEID_SOLAR_SCRIPTS"]
+EXCLUDE_FILENAME = PIPELINE_DIR + "/" + config["EXCLUDE_FILENAME"]
 INSTRUMENT = config["INSTRUMENT"]
 INPUT_VERSION = config["INPUT_VERSION"]
-LEVEL = config["LEVEL"]
 USER_ID = config["USER_ID"]
 PIPELINE_ID = config["PIPELINE_ID"]
-NEID_SOLAR_SCRIPTS = config["NEID_SOLAR_SCRIPTS"]
-PYRHELIO_DIR = config["PYRHELIO_DIR"]
-NEXSCI_ID = config["NEXSCI_ID"]
-EXCLUDE_FILENAME = config["EXCLUDE_FILENAME"]
+
+DATA_ROOT = f"{PIPELINE_DIR}/data"
+DOWNLOAD_SCRIPT = f"{PIPELINE_DIR}/code/download_neid_data.py"
+
+LINELISTS = config["params"]["linelist"]
+CCFS_FLAGS = config["params"]["calc_order_ccfs_flags"]
 
 import os
 import shutil
 from pathlib import Path
-from datetime import datetime
 
 # get the input and output directories
-INPUT_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/L{LEVEL}"
-INPUT_L0_DIR = f"{DATA_L0_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/L0"
+INPUT_L2_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/L2"
+INPUT_L0_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/L0"
+PYRHELIO_DIR = f"{DATA_ROOT}/{INSTRUMENT}/pyrheliometer"
+PYRO_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/pyro"
+MANIFEST_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/manifest"
 OUTPUT_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}"
 
 # get the dates
-#DATES, = glob_wildcards(f"{INPUT_DIR}/{{date}}/meta.csv", followlinks=True)              # Process all days with a saved query, i.e. to make pyrheliometer files from L0s irrespective of whether L2's have been downloaded
-DATES, = glob_wildcards(f"{INPUT_DIR}/{{date}}/0_download_verified", followlinks=True)  # Only process days with verified L2's (usually line to use)
-YEARS = [2021]  # TODO: Figure out how to automate which year/month combinations need to be run
-#MONTHS = ["01","02","03","04","05","06","07","08","09","10","11","12"]
-#DAYS = ["01","02","03","04","05","06","07","08","09",10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
-#YEARS, MONTHS, DAYS, = glob_wildcards(f"{INPUT_DIR}/{{year}}/{{month}}/{{day}}/0_download_verified", followlinks=True)
-#print( YEARS)  # WARNING: glob_wildcards returned list for every match, rather than unique match
+# Process all days with a saved query, i.e. to make pyrheliometer files from L0s irrespective of whether L2's have been downloaded
+# DATES, = glob_wildcards(f"{INPUT_L2_DIR}/{{date}}/meta.csv", followlinks=True) 
 
-# copy over the config file
-onstart:
-    Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
-    CONFIG_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/config/{USER_ID}/{PIPELINE_ID}/"
-    Path(CONFIG_DIR).mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(CONFIG_FILE, f"{CONFIG_DIR}/config_{PIPELINE_ID}_{datetime.now()}.yaml")
-    shell(f"echo Dates to be processed: {{DATES}}")
+# Only process days with verified L2's (usually line to use)
+# DATES, = glob_wildcards(f"{INPUT_L2_DIR}/{{date}}/0_download_verified", followlinks=True)  
+
+# Process days between given dates
+start_date = datetime.strptime(config["start_date"], "%Y-%m-%d").date()
+end_date = datetime.strptime(config["end_date"], "%Y-%m-%d").date()
+
+delta = end_date - start_date
+DATES = [(start_date + timedelta(days=x)).strftime("%Y/%m/%d") for x in range(delta.days + 1)]
 
 rule all:
     input:
-        expand(f"{OUTPUT_DIR}/{{date}}/pyrheliometer.csv", date=DATES),
-        expand(f"{OUTPUT_DIR}/{{date}}/manifest.csv", date=DATES),
-        #expand(f"{OUTPUT_DIR}/{{date}}/daily_ccfs{SUFFIX}.jld2", date=DATES),
-        #expand(f"{OUTPUT_DIR}/{{date}}/daily_rvs{SUFFIX}.csv", date=DATES),
-        f"{OUTPUT_DIR}/combined_rvs{SUFFIX}.csv",
-        expand(f"{OUTPUT_DIR}/{{date}}/daily_summary{SUFFIX}.toml",date=DATES),
-        #expand(f"{OUTPUT_DIR}/{{year}}/{{month}}/monthly_summary{SUFFIX}.csv",year=YEARS,month=MONTHS), # TODO: Figure out how to impelement 
-        f"{OUTPUT_DIR}/summary{SUFFIX}.csv"
+        expand(f"{OUTPUT_DIR}/{{date}}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2", date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys())),
+        expand(f"{OUTPUT_DIR}/combined_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv", linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys())),
+        expand(f"{OUTPUT_DIR}/summary_{{linelist_key}}_{{ccfs_flag_key}}.csv", linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys())),
+        #expand(f"{OUTPUT_DIR}/{{year}}/{{month}}/monthly_summary.csv",year=YEARS,month=MONTHS), # TODO: Figure out how to impelement 
+
+
+rule download_L0:
+    output:
+        f"{INPUT_L0_DIR}/{{date}}/meta.csv"
+    run:
+        shell(f"python {DOWNLOAD_SCRIPT} {INPUT_L0_DIR} {{date}} {INPUT_VERSION} 0")
+    
+    
+rule download_L2:
+    output:
+        f"{INPUT_L2_DIR}/{{date}}/meta.csv"
+    run:
+        shell(f"python {DOWNLOAD_SCRIPT} {INPUT_L2_DIR} {{date}} {INPUT_VERSION} 2")
+
 
 rule prep_pyro:
     input:
-        f"{INPUT_DIR}/{{date}}/meta.csv"
+        metafile=f"{INPUT_L2_DIR}/{{date}}/meta.csv",
         # Intentionally exclude L0 fits files and *.tel files since the L0 files will be autodeleted from /gpfs/scratch and don't want to overwrite pyrooheliometer.csv files generated when L0s were present with ones generated from *.tel files.
+        nexsci_id=NEID_SOLAR_SCRIPTS + "/" + config["params"]["NEXSCI_ID"]
     output:
-        f"{OUTPUT_DIR}/{{date}}/pyrheliometer.csv"
+        f"{PYRO_DIR}/{{date}}/pyrheliometer.csv"
     version: config["PYRHELIOMETER_VERSION"]
     run: 
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_pyrheliometer_daily_{{version}}.jl {{input}} --nexsci_login_filename {NEXSCI_ID} --pyrheliometer_dir {PYRHELIO_DIR} --work_dir {INPUT_L0_DIR}/{{wildcards.date}} --output {{output}}")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_pyrheliometer_daily_{{version}}.jl {{input}} --nexsci_login_filename {{input.nexsci_id}} --pyrheliometer_dir {PYRHELIO_DIR} --work_dir {INPUT_L0_DIR}/{{wildcards.date}} --output {{output}}")
 
 rule prep_manifest:
     input:
-        manifest_dir=f"{INPUT_DIR}/{{date}}/",
-        pyrheliometer=f"{OUTPUT_DIR}/{{date}}/pyrheliometer.csv"
+        manifest_dir=f"{INPUT_L2_DIR}/{{date}}/",
+        pyrheliometer=f"{PYRO_DIR}/{{date}}/pyrheliometer.csv"
     output:
-        f"{OUTPUT_DIR}/{{date}}/manifest.csv",
-        f"{OUTPUT_DIR}/{{date}}/manifest_calib.csv"
+        f"{MANIFEST_DIR}/{{date}}/manifest.csv",
+        f"{MANIFEST_DIR}/{{date}}/manifest_calib.csv"
     version: config["MANIFEST_VERSION"]
     run:
         shell(f"if [ ! -d {OUTPUT_DIR}/{{wildcards.date}} ]; then mkdir {OUTPUT_DIR}/{{wildcards.date}}; fi")
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{{version}}.jl  {INPUT_DIR} {OUTPUT_DIR} --subdir {{wildcards.date}} --pyrheliometer {OUTPUT_DIR} ") 
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{{version}}.jl  {INPUT_L2_DIR} {OUTPUT_DIR} --subdir {{wildcards.date}} --pyrheliometer {OUTPUT_DIR} ") 
 
 rule calc_ccfs:
     input:
         manifest=f"{OUTPUT_DIR}/{{date}}/manifest.csv",
-        linelist=config["params"]["linelist"],
-        #linelist=f"{NEID_SOLAR_SCRIPTS}/scripts/linelist_20210208.csv",              # Moved to config
-        #sed=f"{NEID_SOLAR_SCRIPTS}/data/neidMaster_HR_SmoothLampSED_20210101.fits",  # No longer needed, now that blaze is embedded in L2 files
-        anchors=config["params"]["anchors"]
-        #anchors=f"{NEID_SOLAR_SCRIPTS}/scripts/anchors_20210305.jld2"                #  Moved to config
+        linelist_file=lambda wildcards:LINELISTS[wildcards.linelist_key],
+        anchors= NEID_SOLAR_SCRIPTS + "/" + config["params"]["anchors"]
     output:
-        f"{OUTPUT_DIR}/{{date}}/daily_ccfs{SUFFIX}.jld2"
+        f"{OUTPUT_DIR}/{{date}}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2"
     version: config["CCFS_VERSION"]
     params:
         orders_first=config["params"]["orders_first"],
         orders_last=config["params"]["orders_last"],
         range_no_mask_change=config["params"]["range_no_mask_change"],
-        calc_order_ccfs_flags=config["params"]["calc_order_ccfs_flags"]
+        ccfs_flags_value=lambda wildcards:CCFS_FLAGS[wildcards.ccfs_flags_key]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} -t 1 {NEID_SOLAR_SCRIPTS}/examples/calc_order_ccfs_using_continuum_{{version}}.jl {{input.manifest}} {{output}} --line_list_filename {{input.linelist}}  --anchors_filename {{input.anchors}}  --orders_to_use={{params.orders_first}} {{params.orders_last}} --range_no_mask_change {{params.range_no_mask_change}} {{params.calc_order_ccfs_flags}} --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} -t 1 {NEID_SOLAR_SCRIPTS}/examples/calc_order_ccfs_using_continuum_{{version}}.jl {{input.manifest}} {{output}} --line_list_filename {{input.linelist_file}}  --anchors_filename {{input.anchors}}  --orders_to_use={{params.orders_first}} {{params.orders_last}} --range_no_mask_change {{params.range_no_mask_change}} {{params.ccfs_flags_value}} --overwrite")
     
     
 rule calc_rvs:
     input:
-        ccfs=f"{OUTPUT_DIR}/{{date}}/daily_ccfs{SUFFIX}.jld2",
+        ccfs=f"{OUTPUT_DIR}/{{date}}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2",
         template=config["params"]["ccf_template"]
-        #template=f"{NEID_SOLAR_SCRIPTS}/scripts/template.jld2"
     output:
-        f"{OUTPUT_DIR}/{{date}}/daily_rvs{SUFFIX}.csv"
+        f"{OUTPUT_DIR}/{{date}}/daily_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["RVS_VERSION"]
     params:
         daily_rvs_flags=config["params"]["daily_rvs_flags"]
@@ -112,31 +117,31 @@ rule calc_rvs:
 
 rule report_daily:
     input:
-        rvs=f"{OUTPUT_DIR}/{{date}}/daily_rvs{SUFFIX}.csv"
+        rvs=f"{OUTPUT_DIR}/{{date}}/daily_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv"
         #template=f"{NEID_SOLAR_SCRIPTS}/scripts/template.jld2"
         #manifest=f"{OUTPUT_DIR}/{{date}}/manifest.csv"  # Not implemented yet, but eventually will use extra information from manifest file
     output:
-        f"{OUTPUT_DIR}/{{date}}/daily_summary{SUFFIX}.toml"
+        f"{OUTPUT_DIR}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml"
     version: config["REPORT_DAILY_VERSION"]
     run:
         shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_report_v{{version}}.jl {{input.rvs}} {{output}} ")
 
 rule report_monthly:
     input:
-        #expand(f"{OUTPUT_DIR}/{{year}}/{{month}}/{{day}}/daily_summary{SUFFIX}.toml",year=YEARS,month=MONTHS,day=DAYS)   # Not implemented yet, but eventually could look up info from these.  Need way to exclude days with no data
-         glob_wildcards(f"{OUTPUT_DIR}/{{year}}/{{month}}/{{day}}/daily_summary{SUFFIX}.toml", followlinks=True)
+        #expand(f"{OUTPUT_DIR}/{{year}}/{{month}}/{{day}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml",year=YEARS,month=MONTHS,day=DAYS)   # Not implemented yet, but eventually could look up info from these.  Need way to exclude days with no data
+         glob_wildcards(f"{OUTPUT_DIR}/{{year}}/{{month}}/{{day}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml", followlinks=True)
     output:
-        f"{OUTPUT_DIR}/{{year}}/{{month}}/monthly_summary{SUFFIX}.csv"
+        f"{OUTPUT_DIR}/{{year}}/{{month}}/monthly_summary_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["REPORT_MONTHLY_VERSION"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR}/{{year}}/{{month}} {{output}} --input_filename daily_summary{SUFFIX}.toml --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR}/{{year}}/{{month}} {{output}} --input_filename daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml --overwrite")
 
 rule report_all:
     input:
-        daily_summary = expand(f"{OUTPUT_DIR}/{{date}}/daily_summary{SUFFIX}.toml",date=DATES)
+        daily_summary = f"{OUTPUT_DIR}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml"
     output:
-        good=f"{OUTPUT_DIR}/summary{SUFFIX}.csv",
-        bad=f"{OUTPUT_DIR}/summary_incl_bad{SUFFIX}.csv"
+        good=f"{OUTPUT_DIR}/summary_{{linelist_key}}_{{ccfs_flag_key}}.csv",
+        bad=f"{OUTPUT_DIR}/summary_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["REPORT_ALL_VERSION"]
     run:
         shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} {{output.good}} --input_filename {{input.daily_summary}} --exclude_filename {EXCLUDE_FILENAME} --overwrite")
@@ -144,10 +149,10 @@ rule report_all:
 
 rule combine_rvs:
     input:
-        daily_rvs = expand(f"{OUTPUT_DIR}/{{date}}/daily_rvs{SUFFIX}.csv",date=DATES)
+        daily_rvs = f"{OUTPUT_DIR}/{{date}}/daily_rvs_{{linelist_key}}_{{ccfs_flag_keyv}}.csv"
     output:
-        good=f"{OUTPUT_DIR}/combined_rvs{SUFFIX}.csv",
-        bad=f"{OUTPUT_DIR}/combined_rvs_incl_bad{SUFFIX}.csv"
+        good=f"{OUTPUT_DIR}/combined_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv",
+        bad=f"{OUTPUT_DIR}/combined_rvs_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["COMBINE_RVS_VERSION"]
     run:
         shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} {{output.good}} --input_filename {{input.daily_rvs}} --exclude_filename {EXCLUDE_FILENAME} --overwrite")
