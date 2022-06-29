@@ -45,7 +45,7 @@ CLUSTER_MODE=1
 PIPELINE_DIR=/gpfs/group/ebf11/default/pipeline
 
 # path to the python virtual environment
-VIRTUAL_ENV=${PIPELINE_DIR}/shared/venv/bin/activate
+VIRTUAL_ENV=${PIPELINE_DIR}/venv/bin/activate
 
 # path to the cluster configuration folder
 PROFILE=${PIPELINE_DIR}/shared/config/slurm/
@@ -86,7 +86,8 @@ if(( $CLUSTER_MODE==1))
 then
     snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 --groups prep_pyro=group0 prep_manifest=group0 calc_ccfs=group0 calc_rvs=group0 report_daily=group0 --group-components group0=3 # --forcerun manifest
 else
-    snakemake -c1 --snakefile Snakefile --configfile config.yaml --keep-going
+    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR}
+    # snakemake -np --configfile config.yaml --config start_date=2022-05-29 end_date=2022-05-31 pipeline_dir=/storage/home/dus73/work/pipeline # dry run
 fi
 
 # Printing out job summary

@@ -15,6 +15,7 @@ CCFS_FLAGS = config["params"]["calc_order_ccfs_flags"]
 
 import os
 import shutil
+from datetime import datetime, timedelta
 from pathlib import Path
 
 # get the input and output directories
@@ -74,20 +75,18 @@ rule prep_pyro:
 
 rule prep_manifest:
     input:
-        manifest_dir=f"{INPUT_L2_DIR}/{{date}}/",
         pyrheliometer=f"{PYRO_DIR}/{{date}}/pyrheliometer.csv"
     output:
         f"{MANIFEST_DIR}/{{date}}/manifest.csv",
         f"{MANIFEST_DIR}/{{date}}/manifest_calib.csv"
     version: config["MANIFEST_VERSION"]
     run:
-        shell(f"if [ ! -d {OUTPUT_DIR}/{{wildcards.date}} ]; then mkdir {OUTPUT_DIR}/{{wildcards.date}}; fi")
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{{version}}.jl  {INPUT_L2_DIR} {OUTPUT_DIR} --subdir {{wildcards.date}} --pyrheliometer {OUTPUT_DIR} ") 
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{{version}}.jl  {INPUT_L2_DIR} {MANIFEST_DIR} --subdir {{wildcards.date}} --pyrheliometer {PYRO_DIR} ") 
 
 rule calc_ccfs:
     input:
-        manifest=f"{OUTPUT_DIR}/{{date}}/manifest.csv",
-        linelist_file=lambda wildcards:LINELISTS[wildcards.linelist_key],
+        manifest=f"{MANIFEST_DIR}/{{date}}/manifest.csv",
+        linelist_file=lambda wildcards:NEID_SOLAR_SCRIPTS + "/" + LINELISTS[wildcards.linelist_key],
         anchors= NEID_SOLAR_SCRIPTS + "/" + config["params"]["anchors"]
     output:
         f"{OUTPUT_DIR}/{{date}}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2"
@@ -157,6 +156,3 @@ rule combine_rvs:
     run:
         shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} {{output.good}} --input_filename {{input.daily_rvs}} --exclude_filename {EXCLUDE_FILENAME} --overwrite")
         shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} {{output.bad}}  --input_filename {{input.daily_rvs}} --overwrite")
-
-
-
