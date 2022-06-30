@@ -42,7 +42,6 @@ DATES = [(start_date + timedelta(days=x)).strftime("%Y/%m/%d") for x in range(de
 
 rule all:
     input:
-        expand(f"{OUTPUT_DIR}/{{date}}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2", date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys())),
         expand(f"{OUTPUT_DIR}/combined_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv", linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys())),
         expand(f"{OUTPUT_DIR}/summary_{{linelist_key}}_{{ccfs_flag_key}}.csv", linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys())),
         #expand(f"{OUTPUT_DIR}/{{year}}/{{month}}/monthly_summary.csv",year=YEARS,month=MONTHS), # TODO: Figure out how to impelement 
@@ -103,7 +102,7 @@ rule calc_ccfs:
 rule calc_rvs:
     input:
         ccfs=f"{OUTPUT_DIR}/{{date}}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2",
-        template=config["params"]["ccf_template"]
+        template=NEID_SOLAR_SCRIPTS + "/" + config["params"]["ccf_template"]
     output:
         f"{OUTPUT_DIR}/{{date}}/daily_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["RVS_VERSION"]
@@ -137,7 +136,7 @@ rule report_monthly:
 
 rule report_all:
     input:
-        daily_summary = f"{OUTPUT_DIR}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml"
+        daily_summary = expand(f"{OUTPUT_DIR}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml", date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys()))
     output:
         good=f"{OUTPUT_DIR}/summary_{{linelist_key}}_{{ccfs_flag_key}}.csv",
         bad=f"{OUTPUT_DIR}/summary_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
@@ -148,7 +147,7 @@ rule report_all:
 
 rule combine_rvs:
     input:
-        daily_rvs = f"{OUTPUT_DIR}/{{date}}/daily_rvs_{{linelist_key}}_{{ccfs_flag_keyv}}.csv"
+        daily_rvs = expand(f"{OUTPUT_DIR}/{{date}}/daily_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv", date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys()))
     output:
         good=f"{OUTPUT_DIR}/combined_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv",
         bad=f"{OUTPUT_DIR}/combined_rvs_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
