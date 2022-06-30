@@ -13,9 +13,7 @@ def download_neid(root_dir, date, swversion, level):
     root_dir.mkdir(parents=True, exist_ok=True)
 
     # create the output directory if it does not exist yet
-    out_dir = root_dir.joinpath(swversion)\
-                .joinpath(f"L{level}")\
-                .joinpath(f'{date.year:04d}')\
+    out_dir = root_dir.joinpath(f'{date.year:04d}')\
                 .joinpath(f'{date.month:02d}')\
                 .joinpath(f'{date.day:02d}')
 

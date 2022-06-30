@@ -51,7 +51,7 @@ rule download_L0:
     output:
         f"{INPUT_L0_DIR}/{{date}}/meta.csv"
     run:
-        shell(f"python {DOWNLOAD_SCRIPT} {INPUT_L0_DIR} {{wildcardsdate}} {INPUT_VERSION} 0")
+        shell(f"python {DOWNLOAD_SCRIPT} {INPUT_L0_DIR} {{wildcards.date}} {INPUT_VERSION} 0")
     
     
 rule download_L2:
