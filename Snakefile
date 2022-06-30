@@ -8,7 +8,7 @@ USER_ID = config["USER_ID"]
 PIPELINE_ID = config["PIPELINE_ID"]
 
 DATA_ROOT = f"{PIPELINE_DIR}/data"
-DOWNLOAD_SCRIPT = f"{PIPELINE_DIR}/code/download_neid_data.py"
+DOWNLOAD_SCRIPT = PIPELINE_DIR + "/" + config["DOWNLOAD_SCRIPT"]
 
 LINELISTS = config["params"]["linelist"]
 CCFS_FLAGS = config["params"]["calc_order_ccfs_flags"]
@@ -51,14 +51,14 @@ rule download_L0:
     output:
         f"{INPUT_L0_DIR}/{{date}}/meta.csv"
     run:
-        shell(f"python {DOWNLOAD_SCRIPT} {INPUT_L0_DIR} {{date}} {INPUT_VERSION} 0")
+        shell(f"python {DOWNLOAD_SCRIPT} {INPUT_L0_DIR} {{wildcardsdate}} {INPUT_VERSION} 0")
     
     
 rule download_L2:
     output:
         f"{INPUT_L2_DIR}/{{date}}/meta.csv"
     run:
-        shell(f"python {DOWNLOAD_SCRIPT} {INPUT_L2_DIR} {{date}} {INPUT_VERSION} 2")
+        shell(f"python {DOWNLOAD_SCRIPT} {INPUT_L2_DIR} {{wildcards.date}} {INPUT_VERSION} 2")
 
 
 rule prep_pyro:

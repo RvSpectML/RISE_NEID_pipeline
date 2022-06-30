@@ -1,8 +1,7 @@
 import argparse
 import pandas as pd
 import shutil
-from backports.datetime_fromisoformat import MonkeyPatch
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from pyneid.neid import Neid
 
@@ -78,22 +77,34 @@ def download_neid(root_dir, start_date, end_date, swversion, level):
                 
         start_date += delta_date
         
+def get_date(s):
+    date = None
+    if "-" in s:
+        date = datetime.strptime(s, "%Y-%m-%d").date()
+    else:
+        try:
+            date = datetime.strptime(s, "%Y/%m/%d").date()
+        except ValueError:
+            date = datetime.strptime(s, "%m/%d/%Y").date()
+            
+    return date
+        
+        
 # start of the program    
 if __name__ == "__main__":
     # define the arguments
     parser = argparse.ArgumentParser(description='Query meta data from NEID archive.')
     parser.add_argument('root_dir', help='root directory to save the downloaded data files')
-    parser.add_argument('start_date', help='start date yyyy-mm-dd of the data file to download')
-    parser.add_argument('end_date', help='end date yyyy-mm-dd of the data file to download')
+    parser.add_argument('start_date', help='start date of the data file to download')
+    parser.add_argument('end_date', help='end date of the data file to download')
     parser.add_argument('swversion', help='software version that creates the input data, e.g. v1.1.2')
     parser.add_argument('level', help='data level, e.g. 0, 1 or 2')
 
     # parse the input arguments
     args = parser.parse_args()
     root_dir = Path(args.root_dir)
-    MonkeyPatch.patch_fromisoformat()
-    start_date = date.fromisoformat(args.start_date)
-    end_date = date.fromisoformat(args.end_date)
+    start_date = get_date(args.start_date)
+    end_date = get_date(args.end_date)
     
     # download data files
     download_neid(root_dir, start_date, end_date, args.swversion, args.level)
