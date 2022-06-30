@@ -47,7 +47,7 @@ def download_neid(root_dir, date, swversion, level):
 
                 # filter for the swversion
                 if int(level) > 0: 
-                    df_version = df[df['swversion']==swversion]  
+                    df_version = df[df['swversion'].str.startswith('v' + swversion)]  
 
                 if (len(df.index) > 0 ):
                     # save to meta.csv
