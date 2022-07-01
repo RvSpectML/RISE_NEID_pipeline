@@ -1,8 +1,0 @@
-__default__:
-  job-name: "{rule}"
-  account: "open"
-  partition: "open"
-  time: "23:00:00" # time limit for each job
-  nodes: 1
-  ntasks: 1
-  mem: "4GB"

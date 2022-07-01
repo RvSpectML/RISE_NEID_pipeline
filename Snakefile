@@ -63,14 +63,14 @@ rule download_L2:
 
 rule prep_pyro:
     input:
-        metafile=f"{INPUT_L2_DIR}/{{date}}/meta.csv",
-        # Intentionally exclude L0 fits files and *.tel files since the L0 files will be autodeleted from /gpfs/scratch and don't want to overwrite pyrooheliometer.csv files generated when L0s were present with ones generated from *.tel files.
+        metafile_L0=f"{INPUT_L0_DIR}/{{date}}/meta.csv",
+        metafile_L2=f"{INPUT_L2_DIR}/{{date}}/meta.csv",
         nexsci_id=NEID_SOLAR_SCRIPTS + "/" + config["params"]["NEXSCI_ID"]
     output:
         f"{PYRO_DIR}/{{date}}/pyrheliometer.csv"
     version: config["PYRHELIOMETER_VERSION"]
     run: 
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_pyrheliometer_daily_{{version}}.jl {{input}} --nexsci_login_filename {{input.nexsci_id}} --pyrheliometer_dir {PYRHELIO_DIR} --work_dir {INPUT_L0_DIR}/{{wildcards.date}} --output {{output}}")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_pyrheliometer_daily_{{version}}.jl {{input.metafile_L2}} --nexsci_login_filename {{input.nexsci_id}} --pyrheliometer_dir {PYRHELIO_DIR} --work_dir {INPUT_L0_DIR}/{{wildcards.date}} --output {{output}}")
 
 rule prep_manifest:
     input:
@@ -94,9 +94,9 @@ rule calc_ccfs:
         orders_first=config["params"]["orders_first"],
         orders_last=config["params"]["orders_last"],
         range_no_mask_change=config["params"]["range_no_mask_change"],
-        ccfs_flags_value=lambda wildcards:CCFS_FLAGS[wildcards.ccfs_flags_key]
+        ccfs_flag_value=lambda wildcards:CCFS_FLAGS[wildcards.ccfs_flag_key]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} -t 1 {NEID_SOLAR_SCRIPTS}/examples/calc_order_ccfs_using_continuum_{{version}}.jl {{input.manifest}} {{output}} --line_list_filename {{input.linelist_file}}  --anchors_filename {{input.anchors}}  --orders_to_use={{params.orders_first}} {{params.orders_last}} --range_no_mask_change {{params.range_no_mask_change}} {{params.ccfs_flags_value}} --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} -t 1 {NEID_SOLAR_SCRIPTS}/examples/calc_order_ccfs_using_continuum_{{version}}.jl {{input.manifest}} {{output}} --line_list_filename {{input.linelist_file}}  --anchors_filename {{input.anchors}}  --orders_to_use={{params.orders_first}} {{params.orders_last}} --range_no_mask_change {{params.range_no_mask_change}} {{params.ccfs_flag_value}} --overwrite")
     
     
 rule calc_rvs:
@@ -110,8 +110,8 @@ rule calc_rvs:
         daily_rvs_flags=config["params"]["daily_rvs_flags"]
     run:
         #shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_rvs_v{{version}}.jl {{input.ccfs}} {{output}} {{params.daily_rvs_flags}} ")
-        #shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_rvs_v{{version}}.jl {{input.ccfs}} {{output}} --template_file {{input.template}} {{params.daily_rvs_flags}} ")
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_rvs_v{{version}}.jl {{input.ccfs}} {{output}} {{input.template}} {{params.daily_rvs_flags}} ")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_rvs_v{{version}}.jl {{input.ccfs}} {{output}} --template_file {{input.template}} {{params.daily_rvs_flags}} ")
+
 
 rule report_daily:
     input:
