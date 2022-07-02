@@ -12,13 +12,6 @@
 #SBATCH --time=23:00:00
 #SBATCH --partition=open
 
-####  Output file
-#SBATCH --output=logs/chron.slurm.%j.log
-
-####  Schedule the start time of this job
-#SBATCH --begin=01:00:00
-
-
 echo "Job $SLURM_JOB_ID started on $(hostname) at $(date)"
 
 ##  Print the nodename(s) to the output in case needed for diagnostics,
@@ -87,16 +80,8 @@ then
     snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 --groups prep_pyro=group0 prep_manifest=group0 calc_ccfs=group0 calc_rvs=group0 report_daily=group0 --group-components group0=3 # --forcerun manifest
 else
     snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR}
-    # snakemake -np --configfile config.yaml --config start_date=2022-05-29 end_date=2022-05-31 pipeline_dir=/storage/home/dus73/work/pipeline # dry run
+    # snakemake --configfile config.yaml --config start_date=2022-05-29 end_date=2022-05-31 pipeline_dir=/storage/home/dus73/work/pipeline # dry run
 fi
 
 # Printing out job summary
 qstat -f $SLURM_JOBID
-
-####################################################################
-# Submit the next job                                              #
-####################################################################
-
-sbatch -d afterany:${SLURM_JOB_ID} ${SLURM_SUBMIT_DIR}/pipeline.slurm
-
-
