@@ -14,6 +14,8 @@
 
 echo "Job $SLURM_JOBID started on $(hostname) at $(date)"
 
+cd $SLURM_SUBMIT_DIR
+
 ##  Print the nodename(s) to the output in case needed for diagnostics,
 ##  or if you need information about the hardware after the job ran.
 echo $SLURM_JOB_NODELIST
@@ -80,7 +82,7 @@ then
     snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 --groups prep_pyro=group0 prep_manifest=group0 calc_ccfs=group0 calc_rvs=group0 report_daily=group0 --group-components group0=3 # --forcerun manifest
 else
     snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1
-    # snakemake --configfile config.yaml --config start_date=2022-05-29 end_date=2022-05-31 pipeline_dir=/storage/home/dus73/work/pipeline -np # dry run
+    # snakemake --configfile config.yaml --config start_date=2022-05-29 end_date=2022-05-29 pipeline_dir=/storage/home/dus73/work/pipeline -np # dry run
 fi
 
 # Printing out job summary
