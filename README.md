@@ -3,8 +3,11 @@ This is an automated snakemake pipeline for NEID data processing.
 # Quick-start
 
 0.  Setup your account on the system you'll be working from.
+
 0a.  Make sure you can connect to GitHub (e.g., have account, [ssh keys setup](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account), running `ssh-agent` and `ssh-add`).
+
 0b.  Make sure julia is installed and in your path (e.g., `module load julia` on Roar).
+
 0c.  Make sure julia depot is somewhere you'll have sufficient storage space and isn't slow (i.e., not home on Roar).  
 ```
 mkdir /storage/work/USERID/julia_depto; 
@@ -62,6 +65,7 @@ $ source venv/bin/activate
 $ pip install --upgrade pip
 $ pip install -r shared/envs/requirements.txt
 ```
+**TODO** Fix.  shared/envs/requirements.txt doesn't exist.  There are two for snakemake and downloads.  
 
 Copy the following data to the NeidSolarScripts.jl folder
 - data/
