@@ -29,17 +29,21 @@ $ cd pipeline_dir
 └── work
 ```
 
-2a.  Clone the snakemake pipeline codes and rename the folder to shared
+2a.  Clone the snakemake pipeline codes and rename the folder to shared.  
+(For now, you need to checkout dev-dshao branch, but that should be removed once its tested and merged.)
 ```
 $ git clone git@github.com:RvSpectML/RISE_NEID_pipeline.git
 $ mv RISE_NEID_pipeline shared
+$ cd shared
+$ git checkout dev-dshao
+$ cd ..
 ```
 
 2b.  Clone the NeidSolarScripts codes
 ```
 $ git clone git@github.com:RvSpectML/NeidSolarScripts.jl.git
 ```
-
+ 
 2c.  Instantiate the NeidSolarScripts project. (I temporarily commented out Rcall on RoarCollab as R has not been installed there)
 
 ```
@@ -65,10 +69,9 @@ $ source venv/bin/activate
 $ pip install --upgrade pip
 $ pip install -r shared/envs/requirements.txt
 ```
-**TODO** Fix.  shared/envs/requirements.txt doesn't exist.  There are two for snakemake and downloads.  
 
-Copy the following data to the NeidSolarScripts.jl folder
-- data/
+3. Copy the following data to the NeidSolarScripts.jl folder
+- data/  (**TODO:** Need to clarify)
 - scripts/anchors_*.jld2
 - scripts/linelist_*.csv
 - scripts/template.jld2
