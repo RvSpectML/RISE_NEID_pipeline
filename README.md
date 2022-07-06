@@ -1,67 +1,81 @@
-# Download data from NEID ARCHIVE
- 
-To download solar L1 data from NEID ARCHIVE https://neid.ipac.caltech.edu/search_solar.php, first update
-"VERSION", "LEVEL", "ROOT_DIR", "DATA_DIR", "START_DATE" and/or "END_DATE" in the PBS script download_neid.pbs 
-if necessary. Then
+This is an automated snakemake pipeline for NEID data processing.
 
-$ qsub scripts/download_neid.pbs
+# Quick-start
 
-Downloaded data will be saved to DATA_DIR defined in the PBS script download_neid.pbs, 
-grouped by date, and the output logs will be saved to the directory logs/. This PBS script 
-calls code/download_neid_data.py to download the data between the start and end dates.
+```
+$ cd pipeline_dir
+```
 
-# Verify downloaded data
+Now we'll prepare the pipeline_dir following the below structure:
 
-$ qsub scripts/verify_download_data.pbs
+```
+├── data 
+├── NeidSolarScripts.jl
+├── shared
+├── venv
+└── work
+```
 
-The script crawl dates with verify_download.jl and triggers new download when necessary. Update VERSION, LEVEL,
-DATA_DIR, JULIA_PROJECT, VERIFY_DOWNLOAD_SCIRPT, PATH (to include JULIA path), JULIA_DEPOT_PATH in the script 
-before running.
+Clone the snakemake pipeline codes and rename the folder to shared
+```
+$ git clone https://github.com/RvSpectML/RISE_NEID_pipeline.git
+$ mv RISE_NEID_pipeline shared
+```
 
-# Move data from group directory to archive on ROAR
+Clone the NeidSolarScripts codes
+```
+$ git clone https://github.com/RvSpectML/NeidSolarScripts.jl.git
+```
 
-The archive storage is only accessible from a data manager node on ROAR. To log in a data manager node
+Copy the following data to the NeidSolarScripts.jl folder
+- data/
+- scripts/anchors_*.jld2
+- scripts/linelist_*.csv
+- scripts/template.jld2
 
-$ ssh username@datamgr.aci.ics.psu.edu
+Instantiate the NeidSolarScripts project. (I temporarily commented out Rcall on RoarCollab as R has not been installed there)
 
-To move data from the group directory to the archive directory, update the paths in script
-scripts/move_to_archive.sh if necessary,
+```
+$ julia --project=NeidSolarScripts.jl
+> import Pkg
+> Pkg.instantiate()
+> exit()
+```
+Prepare the data directory (On RoarCollab, I'm linking it to scratch for now.)
+```
+$ mkdir data 
+```
 
-$ sh scripts/move_to_archive.sh <FOLDER_NAME>
+Copy the follwoing data to the data directory
+- days_to_exclude.csv
+- neid_solar/pyrheliometer/
 
-e.g $ sh scripts/move_to_archive.sh 2021-07-22
+Create the virtual environment and install packages such as snakemake and pyNeid
+```
+$ python3 -m venv venv
+$ source venv/bin/activate
+$ pip install --upgrade pip
+$ pip install -r shared/envs/requirements.txt
+```
 
-This script compresses the folder to a .tar.gz file and saves the compressed file to the archive directory,
-and then it deletes the original folder. 
+Create a workspace
+```
+$ mkidr -p work/test1
+$ cd work/test1
+```
 
-# Copy data from archive to group directory on ROAR
+Copy over the slurm script, Snakefile and config.yaml
+```
+$ cp ../../shared/scripts/slurm/pipeline.slurm .
+$ cp ../../shared/Snakefile .
+$ cp ../../config/config.yaml .
+```
 
-The archive storage is only accessible from a data manager node on ROAR. To log in a data manager node
+Change the parameters as needed: 
+- config.yaml
+- pipeline.slurm: the "UPDATE VARIABLES HERE" section
 
-$ ssh username@datamgr.aci.ics.psu.edu
-
-To copy the data from archive storage to the active storage
-(e.g. group directory or scrache space),
-
-$ cd <DESTINATION_FOLDER>
-
-$ tar -xzf /archive/ebf11/default/.../<FOLDER_NAME>.tar.gz
-
-Note that you are in charge of deleting the extracted folder on the active storage after usage if necessary.
-
-# Snakemake
-
-$ qsub scripts/clusterSnakemake.pbs
-
-You can choose to run the workflow either in a single submission (Option1) or in the cluster mode (Option 2). 
-Update the script and related config files if necessary. For example:
-
-- scripts/clusterSnakemake.pbs: virtual environment for snakemake, PATH (to include JULIA path), 
-JULIA_DEPOT_PATH, snakemake options (e.g. group0)
-
-- config/config.yaml: directoriees, versions, params.
-
-- config/pbs-torque/cluster.yaml (cluster-mode): walltime, account, etc.
-
-- config/pbs-torque/config.yaml (cluster-mode): jobs (maximum number of concurrent jobs)
-
+submit the job in the work/test1 directory
+```
+$ sbatch pipeline.slurm
+```
