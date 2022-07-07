@@ -13,6 +13,7 @@ DOWNLOAD_SCRIPT = PIPELINE_DIR + "/" + config["DOWNLOAD_SCRIPT"]
 
 LINELISTS = config["params"]["linelist"]
 CCFS_FLAGS = config["params"]["calc_order_ccfs_flags"]
+CCF_TEMPLATE_DATE = config["params"]["ccf_template_date"]
 
 import os
 import shutil
@@ -26,6 +27,7 @@ PYRHELIO_TEL_DIR = f"{DATA_ROOT}/pyrheliometer"
 PYRHELIO_DIR = f"{DATA_ROOT}/v{INPUT_VERSION}/pyrheliometer"
 MANIFEST_DIR = f"{DATA_ROOT}/v{INPUT_VERSION}/manifest"
 OUTPUT_DIR = f"{DATA_ROOT}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}"
+CCF_TEMPLATE_DIR = f"{OUTPUT_DIR}/{CCF_TEMPLATE_DATE}"
 
 # get the dates
 # Process all days with a saved query, i.e. to make pyrheliometer files from L0s irrespective of whether L2's have been downloaded
@@ -107,7 +109,9 @@ rule calc_ccfs:
 rule calc_rvs:
     input:
         ccfs=f"{OUTPUT_DIR}/{{date}}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2",
-        template=NEID_SOLAR_SCRIPTS + "/" + config["params"]["ccf_template"]
+        #template=NEID_SOLAR_SCRIPTS + "/" + config["params"]["ccf_template"]
+        #template=config["params"]["ccf_template"]
+        template=f"{CCF_TEMPLATE_DIR}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2"
     output:
         f"{OUTPUT_DIR}/{{date}}/daily_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["RVS_VERSION"]

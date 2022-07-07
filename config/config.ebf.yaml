@@ -22,7 +22,9 @@ params: # most filepaths in this section are relative to NEID_SOLAR_SCRIPTS  # T
     #overlap=1: data/VALD_species=all_depthcutoff=0.05_overlapcutoff=1e-05_allowBlends=0_badLineFilter=ESPRESSOG2_rejectTelluricSlope=0.0_waves=Reiners_depths=original_nbin=1_binparam=depth_n=0.csv
     #overlap=3: data/VALD_species=all_depthcutoff=0.05_overlapcutoff=3e-05_allowBlends=0_badLineFilter=ESPRESSOG2_rejectTelluricSlope=0.0_waves=Reiners_depths=original_nbin=1_binparam=depth_n=0.csv
     #overlap=6: data/VALD_species=all_depthcutoff=0.05_overlapcutoff=6e-05_allowBlends=0_badLineFilter=ESPRESSOG2_rejectTelluricSlope=0.0_waves=Reiners_depths=original_nbin=1_binparam=depth_n=0.csv
-  ccf_template: scripts/data/template.jld2
+  #ccf_template: scripts/data/template.jld2
+  #ccf_template: daily_ccfs_orig_norm=blaze-mask=1.jld2
+  ccf_template_date: 2021/05/27
   orders_first: 56
   orders_last: 108
   range_no_mask_change: 6.0
