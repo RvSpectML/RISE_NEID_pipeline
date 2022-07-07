@@ -63,9 +63,19 @@ $ julia --project=NeidSolarScripts.jl
 ```
 $ mkdir data 
 ```
-    Copy the following data into the data sub-directory
-    - days_to_exclude.csv (column name date_to_exclude, entries look like 2021-10-02)
-    - neid_solar/pyrheliometer/*.tel  (Can download from https://neid.ipac.caltech.edu/pyrheliometer.php )
+Copy the following data into the data sub-directory
+   - `days_to_exclude.csv` (column name date_to_exclude, entries look like 2021-10-02)
+   - `pyrheliometer/*.tel` (keeping pyrheliometer subdirectory; can download those from https://neid.ipac.caltech.edu/pyrheliometer.php; see `NeidSolarScripts.jl/scripts/download_pyrheliometer_tel_files.jl` for download script )
+    
+ Optionally create parallel data directory on scratch file system and add symlinks to inside the data directory, so L0 files are stored on scratch.  E.g.,
+ ```
+ mkdir -p /scratch/ebf11/pipeline/neid_solar/data/v1.1/L0;
+ cd data
+ mkdir v1.1
+ cd v1.1
+ ln -s /scratch/ebf11/pipeline/neid_solar/data/v1.1/L0 .
+ cd ../..
+ ```
 
 -  Create a directory to contain workspaces
 ```
@@ -90,18 +100,20 @@ Copy the following into the NeidSolarScripts.jl folder (**TODO:** probably shoul
 
 ## Run pipeline
 ### 4.  Create a workspace for an analysis run.  
-If your run is named `test1`, then you would create  
+If your have userid USERID and a run to be named `test1`, then you would create  
 ```
-$ mkidr -p work/test1
-$ cd work/test1
+$ mkdir -p work/USERID/test1
+$ cd work/USERID/test1
 ```
 
 Copy the template slurm script (`pipeline.slurm`), Snakefile (`Snakefile`) and configuration parameters file (`config.yaml`) into the workspace for your analysis run.
 ```
-$ cp ../../shared/scripts/slurm/pipeline.slurm .
-$ cp ../../shared/Snakefile .
-$ cp ../../config/config.yaml .
+$ cp ../../../shared/scripts/slurm/pipeline.slurm .
+$ cp ../../../shared/Snakefile .
+$ cp ../../../config/config.yaml .
 ```
+
+Create an empty data_paths.jl (`touch data_paths.jl`).  (**TODO:** Update make_manifest_solar.jl so it doesn't need this file.  Or if it really does, make it toml file.)
 
 ### 5. Update parameters for your analysis run.
  Change the parameters as needed for your run: 
