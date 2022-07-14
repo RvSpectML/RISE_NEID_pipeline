@@ -1,30 +1,35 @@
 # retrieve directories from config file
 PIPELINE_DIR = config["pipeline_dir"]
-NEID_SOLAR_SCRIPTS = PIPELINE_DIR + "/" + config["NEID_SOLAR_SCRIPTS"]
-EXCLUDE_FILENAME = PIPELINE_DIR + "/" + config["EXCLUDE_FILENAME"]
 INSTRUMENT = config["INSTRUMENT"]
 INPUT_VERSION = config["INPUT_VERSION"]
-USER_ID = config["USER_ID"]
 PIPELINE_ID = config["PIPELINE_ID"]
-
-DATA_ROOT = f"{PIPELINE_DIR}/data"
+NEID_SOLAR_SCRIPTS = PIPELINE_DIR + "/" + INSTRUMENT + "/" + config["NEID_SOLAR_SCRIPTS"]
+DATA_ROOT = f"{PIPELINE_DIR}/{INSTRUMENT}/data"
+EXCLUDE_FILENAME = DATA_ROOT + "/" + config["EXCLUDE_FILENAME"]
 DOWNLOAD_SCRIPT = PIPELINE_DIR + "/" + config["DOWNLOAD_SCRIPT"]
 
 LINELISTS = config["params"]["linelist"]
 CCFS_FLAGS = config["params"]["calc_order_ccfs_flags"]
+CCF_TEMPLATE_DATE = config["params"]["ccf_template_date"]
 
 import os
-import shutil
 from datetime import datetime, timedelta
-from pathlib import Path
+
+# Use the USER_ID provided in config.yaml if provided;
+# otherwise, use the environment variable USER
+if config["USER_ID"]:
+    USER_ID = config["USER_ID"]
+else:
+    USER_ID = os.environ["USER"]
 
 # get the input and output directories
-INPUT_L2_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/L2"
-INPUT_L0_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/L0"
-PYRHELIO_DIR = f"{DATA_ROOT}/{INSTRUMENT}/pyrheliometer"
-PYRO_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/pyro"
-MANIFEST_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/manifest"
-OUTPUT_DIR = f"{DATA_ROOT}/{INSTRUMENT}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}"
+INPUT_L2_DIR = f"{DATA_ROOT}/v{INPUT_VERSION}/L2"
+INPUT_L0_DIR = f"{DATA_ROOT}/v{INPUT_VERSION}/L0"
+PYRHELIO_TEL_DIR = f"{DATA_ROOT}/pyrheliometer"
+PYRHELIO_DIR = f"{DATA_ROOT}/v{INPUT_VERSION}/pyrheliometer"
+MANIFEST_DIR = f"{DATA_ROOT}/v{INPUT_VERSION}/manifest"
+OUTPUT_DIR = f"{DATA_ROOT}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}"
+CCF_TEMPLATE_DIR = f"{OUTPUT_DIR}/{CCF_TEMPLATE_DATE}"
 
 # get the dates
 # Process all days with a saved query, i.e. to make pyrheliometer files from L0s irrespective of whether L2's have been downloaded
@@ -39,6 +44,9 @@ end_date = datetime.strptime(config["end_date"], "%Y-%m-%d").date()
 
 delta = end_date - start_date
 DATES = [(start_date + timedelta(days=x)).strftime("%Y/%m/%d") for x in range(delta.days + 1)]
+
+# Get NExScI login credentials
+NEXSCI_ID = config["params"]["NEXSCI_ID"]  
 
 rule all:
     input:
@@ -65,28 +73,26 @@ rule prep_pyro:
     input:
         metafile_L0=f"{INPUT_L0_DIR}/{{date}}/meta.csv",
         metafile_L2=f"{INPUT_L2_DIR}/{{date}}/meta.csv",
-        nexsci_id=NEID_SOLAR_SCRIPTS + "/" + config["params"]["NEXSCI_ID"]
     output:
-        f"{PYRO_DIR}/{{date}}/pyrheliometer.csv"
+        f"{PYRHELIO_DIR}/{{date}}/pyrheliometer.csv"
     version: config["PYRHELIOMETER_VERSION"]
     run: 
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_pyrheliometer_daily_{{version}}.jl {{input.metafile_L2}} --nexsci_login_filename {{input.nexsci_id}} --pyrheliometer_dir {PYRHELIO_DIR} --work_dir {INPUT_L0_DIR}/{{wildcards.date}} --output {{output}}")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_pyrheliometer_daily_{{version}}.jl {{input.metafile_L2}} --nexsci_login_filename {NEXSCI_ID} --pyrheliometer_dir {PYRHELIO_TEL_DIR} --work_dir {INPUT_L0_DIR}/{{wildcards.date}} --output {{output}}")
 
 rule prep_manifest:
     input:
-        pyrheliometer=f"{PYRO_DIR}/{{date}}/pyrheliometer.csv"
+        pyrheliometer=f"{PYRHELIO_DIR}/{{date}}/pyrheliometer.csv"
     output:
-        f"{MANIFEST_DIR}/{{date}}/manifest.csv",
-        f"{MANIFEST_DIR}/{{date}}/manifest_calib.csv"
+        f"{MANIFEST_DIR}/{{date}}/manifest.csv"
     version: config["MANIFEST_VERSION"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{{version}}.jl  {INPUT_L2_DIR} {MANIFEST_DIR} --subdir {{wildcards.date}} --pyrheliometer {PYRO_DIR} ") 
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{{version}}.jl  {INPUT_L2_DIR} {MANIFEST_DIR} --subdir {{wildcards.date}} --pyrheliometer {PYRHELIO_DIR} ") 
 
 rule calc_ccfs:
     input:
         manifest=f"{MANIFEST_DIR}/{{date}}/manifest.csv",
         linelist_file=lambda wildcards:NEID_SOLAR_SCRIPTS + "/" + LINELISTS[wildcards.linelist_key],
-        anchors= NEID_SOLAR_SCRIPTS + "/" + config["params"]["anchors"]
+        anchors=NEID_SOLAR_SCRIPTS + "/" + config["params"]["anchors"]
     output:
         f"{OUTPUT_DIR}/{{date}}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2"
     version: config["CCFS_VERSION"]
@@ -102,7 +108,7 @@ rule calc_ccfs:
 rule calc_rvs:
     input:
         ccfs=f"{OUTPUT_DIR}/{{date}}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2",
-        template=NEID_SOLAR_SCRIPTS + "/" + config["params"]["ccf_template"]
+        template=f"{CCF_TEMPLATE_DIR}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2"
     output:
         f"{OUTPUT_DIR}/{{date}}/daily_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["RVS_VERSION"]
