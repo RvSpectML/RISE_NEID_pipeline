@@ -96,7 +96,6 @@ Copy the following into the NeidSolarScripts.jl folder (**TODO:** probably shoul
 - data/  (**TODO:** Need to clarify what's needed)
 - scripts/anchors_*.jld2
 - scripts/linelist_*.csv
-- scripts/template.jld2
 
 ## Run pipeline
 ### 4.  Create a workspace for an analysis run.  
