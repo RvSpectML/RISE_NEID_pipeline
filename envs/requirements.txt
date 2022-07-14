@@ -1,4 +1,4 @@
-astropy==4.1
-pyneid==1.0.5
-pandas==1.1.5
-snakemake==6.9.1
+astropy>=5.1
+pyneid>=1.0.5
+pandas>=1.4.3
+snakemake>=7.8.5
