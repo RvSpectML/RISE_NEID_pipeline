@@ -69,10 +69,28 @@ rule download_L2:
         shell(f"python {DOWNLOAD_SCRIPT} {INPUT_L2_DIR} {{wildcards.date}} {INPUT_VERSION} 2")
 
 
+rule verify_L0:
+    input:
+        f"{INPUT_L0_DIR}/{{date}}/meta.csv"
+    output:
+        f"{INPUT_L0_DIR}/{{date}}/0_download_verified"
+    run:
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl {INPUT_L0_DIR}/{{wildcards.date}} --checksums")
+
+
+rule verify_L2:
+    input:
+        f"{INPUT_L2_DIR}/{{date}}/meta.csv"
+    output:
+        f"{INPUT_L2_DIR}/{{date}}/0_download_verified"
+    run:
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl {INPUT_L2_DIR}/{{wildcards.date}} --checksums")
+
+
 rule prep_pyro:
     input:
-        metafile_L0=f"{INPUT_L0_DIR}/{{date}}/meta.csv",
-        metafile_L2=f"{INPUT_L2_DIR}/{{date}}/meta.csv",
+        metafile_L0=f"{INPUT_L0_DIR}/{{date}}/0_download_verified",
+        metafile_L2=f"{INPUT_L2_DIR}/{{date}}/0_download_verified",
     output:
         f"{PYRHELIO_DIR}/{{date}}/pyrheliometer.csv"
     version: config["PYRHELIOMETER_VERSION"]

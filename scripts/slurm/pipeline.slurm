@@ -43,7 +43,7 @@ PIPELINE_DIR=/storage/work/dus73/pipeline
 VIRTUAL_ENV=${PIPELINE_DIR}/venv/bin/activate
 
 # path to the cluster configuration folder
-PROFILE=${PIPELINE_DIR}/shared/config/slurm/
+PROFILE=${PIPELINE_DIR}/neid_solar/shared/config/slurm/
 
 # path to the Snakefile
 SNAKEFILE=Snakefile
