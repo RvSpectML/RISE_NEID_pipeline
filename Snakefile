@@ -50,6 +50,7 @@ NEXSCI_ID = config["params"]["NEXSCI_ID"]
 
 rule all:
     input:
+        expand(f"{OUTPUT_DIR}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml", date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys())),
         expand(f"{OUTPUT_DIR}/combined_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv", linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys())),
         expand(f"{OUTPUT_DIR}/summary_{{linelist_key}}_{{ccfs_flag_key}}.csv", linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys())),
         #expand(f"{OUTPUT_DIR}/{{year}}/{{month}}/monthly_summary.csv",year=YEARS,month=MONTHS), # TODO: Figure out how to impelement 
