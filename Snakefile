@@ -90,8 +90,10 @@ rule verify_L2:
 
 rule prep_pyro:
     input:
-        metafile_L0=f"{INPUT_L0_DIR}/{{date}}/0_download_verified",
-        metafile_L2=f"{INPUT_L2_DIR}/{{date}}/0_download_verified",
+        metafile_L0=f"{INPUT_L0_DIR}/{{date}}/meta.csv",
+        metafile_L2=f"{INPUT_L2_DIR}/{{date}}/meta.csv",
+        verified_L0=f"{INPUT_L0_DIR}/{{date}}/0_download_verified",
+        verified_L2=f"{INPUT_L2_DIR}/{{date}}/0_download_verified",
     output:
         f"{PYRHELIO_DIR}/{{date}}/pyrheliometer.csv"
     version: config["PYRHELIOMETER_VERSION"]
