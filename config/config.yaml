@@ -29,11 +29,11 @@ params: # most filepaths in this section are relative to NEID_SOLAR_SCRIPTS  # T
   range_no_mask_change: 6.0
   calc_order_ccfs_flags: #--ccf_mid_vel 640 --variable_mask_scale --recompute_line_weights
     norm=blaze&mask=1: --ccf_mid_vel -640 --mask_scale_factor 1
-    #norm=blaze-mask=3: --ccf_mid_vel -640 --mask_scale_factor 3
-    #norm=blaze-mask=5: --ccf_mid_vel -640 --mask_scale_factor 5
-    #norm=blaze-mask=var: --ccf_mid_vel -640 --variable_mask_scale
-    #norm=cont-mask=1: --ccf_mid_vel -640 --apply_continuum_normalization --mask_scale_factor 1
-    #norm=cont-mask=3: --ccf_mid_vel -640 --apply_continuum_normalization --mask_scale_factor 3
-    #norm=cont-mask=5: --ccf_mid_vel -640 --apply_continuum_normalization --mask_scale_factor 5
-    #norm=cont-mask=var: --ccf_mid_vel -640 --apply_continuum_normalization --variable_mask_scale
+    #norm=blaze&mask=3: --ccf_mid_vel -640 --mask_scale_factor 3
+    #norm=blaze&mask=5: --ccf_mid_vel -640 --mask_scale_factor 5
+    #norm=blaze&mask=var: --ccf_mid_vel -640 --variable_mask_scale
+    #norm=cont&mask=1: --ccf_mid_vel -640 --apply_continuum_normalization --mask_scale_factor 1
+    #norm=cont&mask=3: --ccf_mid_vel -640 --apply_continuum_normalization --mask_scale_factor 3
+    #norm=cont&mask=5: --ccf_mid_vel -640 --apply_continuum_normalization --mask_scale_factor 5
+    #norm=cont&mask=var: --ccf_mid_vel -640 --apply_continuum_normalization --variable_mask_scale
   daily_rvs_flags: --rv_alg gaussian_template_quadratic
