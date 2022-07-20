@@ -123,7 +123,7 @@ rule calc_ccfs:
         range_no_mask_change=config["params"]["range_no_mask_change"],
         ccfs_flag_value=lambda wildcards:CCFS_FLAGS[wildcards.ccfs_flag_key]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} -t 1 {NEID_SOLAR_SCRIPTS}/examples/calc_order_ccfs_using_continuum_{{version}}.jl {{input.manifest}} {{output}} --line_list_filename {{input.linelist_file}}  --anchors_filename {{input.anchors}}  --orders_to_use={{params.orders_first}} {{params.orders_last}} --range_no_mask_change {{params.range_no_mask_change}} {{params.ccfs_flag_value}} --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} -t 1 {NEID_SOLAR_SCRIPTS}/examples/calc_order_ccfs_using_continuum_{{version}}.jl {{input.manifest}} '{{output}}' --line_list_filename {{input.linelist_file}}  --anchors_filename {{input.anchors}}  --orders_to_use={{params.orders_first}} {{params.orders_last}} --range_no_mask_change {{params.range_no_mask_change}} {{params.ccfs_flag_value}} --overwrite")
     
     
 rule calc_rvs:
@@ -136,8 +136,7 @@ rule calc_rvs:
     params:
         daily_rvs_flags=config["params"]["daily_rvs_flags"]
     run:
-        #shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_rvs_v{{version}}.jl {{input.ccfs}} {{output}} {{params.daily_rvs_flags}} ")
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_rvs_v{{version}}.jl {{input.ccfs}} {{output}} --template_file {{input.template}} {{params.daily_rvs_flags}} ")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_rvs_v{{version}}.jl '{{input.ccfs}}' '{{output}}' --template_file '{{input.template}}' {{params.daily_rvs_flags}} ")
 
 
 rule report_daily:
@@ -149,7 +148,7 @@ rule report_daily:
         f"{OUTPUT_DIR}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml"
     version: config["REPORT_DAILY_VERSION"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_report_v{{version}}.jl {{input.rvs}} {{output}} ")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/daily_report_v{{version}}.jl '{{input.rvs}}' '{{output}}' ")
 
 rule report_monthly:
     input:
@@ -159,7 +158,7 @@ rule report_monthly:
         f"{OUTPUT_DIR}/{{year}}/{{month}}/monthly_summary_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["REPORT_MONTHLY_VERSION"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR}/{{year}}/{{month}} {{output}} --input_filename daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR}/{{year}}/{{month}} '{{output}}' --input_filename 'daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml' --overwrite")
 
 rule report_all:
     input:
@@ -169,8 +168,8 @@ rule report_all:
         bad=f"{OUTPUT_DIR}/summary_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["REPORT_ALL_VERSION"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} {{output.good}} --input_filename {{input.daily_summary}} --exclude_filename {EXCLUDE_FILENAME} --overwrite")
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} {{output.bad}}  --input_filename {{input.daily_summary}} --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} '{{output.good}}' --input_filename '{{input.daily_summary}}' --exclude_filename {EXCLUDE_FILENAME} --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} '{{output.bad}}' --input_filename '{{input.daily_summary}}' --overwrite")
 
 rule combine_rvs:
     input:
@@ -180,5 +179,5 @@ rule combine_rvs:
         bad=f"{OUTPUT_DIR}/combined_rvs_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["COMBINE_RVS_VERSION"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} {{output.good}} --input_filename {{input.daily_rvs}} --exclude_filename {EXCLUDE_FILENAME} --overwrite")
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} {{output.bad}}  --input_filename {{input.daily_rvs}} --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} '{{output.good}}' --input_filename '{{input.daily_rvs}}' --exclude_filename {EXCLUDE_FILENAME} --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} '{{output.bad}}' --input_filename '{{input.daily_rvs}}' --overwrite")

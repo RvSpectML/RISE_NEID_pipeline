@@ -28,7 +28,7 @@ params: # most filepaths in this section are relative to NEID_SOLAR_SCRIPTS  # T
   orders_last: 108
   range_no_mask_change: 6.0
   calc_order_ccfs_flags: #--ccf_mid_vel 640 --variable_mask_scale --recompute_line_weights
-    norm=blaze-mask=1: --ccf_mid_vel -640 --mask_scale_factor 1
+    norm=blaze&mask=1: --ccf_mid_vel -640 --mask_scale_factor 1
     #norm=blaze-mask=3: --ccf_mid_vel -640 --mask_scale_factor 3
     #norm=blaze-mask=5: --ccf_mid_vel -640 --mask_scale_factor 5
     #norm=blaze-mask=var: --ccf_mid_vel -640 --variable_mask_scale
