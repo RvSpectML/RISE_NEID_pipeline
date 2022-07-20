@@ -112,7 +112,9 @@ $ cp ../../../shared/Snakefile .
 $ cp ../../../config/config.yaml .
 ```
 
-Create an empty data_paths.jl (`touch data_paths.jl`).  (**TODO:** Update make_manifest_solar.jl so it doesn't need this file.  Or if it really does, make it toml file.)
+Create file nexsci_id.toml in the workspace that includes the username and password for neid.
+
+Create an empty data_paths.jl (`touch data_paths.jl`) in NeidSolarScripts.jl.  (**TODO:** Update make_manifest_solar.jl so it doesn't need this file.  Or if it really does, make it toml file.)
 
 ### 5. Update parameters for your analysis run.
  Change the parameters as needed for your run: 
