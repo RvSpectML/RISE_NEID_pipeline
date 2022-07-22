@@ -168,8 +168,8 @@ rule report_all:
         bad=f"{OUTPUT_DIR}/summary_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["REPORT_ALL_VERSION"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} '{{output.good}}' --input_filename '{{input.daily_summary}}' --exclude_filename {EXCLUDE_FILENAME} --overwrite")
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} '{{output.bad}}' --input_filename '{{input.daily_summary}}' --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} '{{output.good}}' --input_filename 'daily_summary_{{wildcards.linelist_key}}_{{wildcards.ccfs_flag_key}}.toml' --exclude_filename {EXCLUDE_FILENAME} --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} '{{output.bad}}' --input_filename 'daily_summary_{{wildcards.linelist_key}}_{{wildcards.ccfs_flag_key}}.toml' --overwrite")
 
 rule combine_rvs:
     input:
@@ -179,5 +179,5 @@ rule combine_rvs:
         bad=f"{OUTPUT_DIR}/combined_rvs_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["COMBINE_RVS_VERSION"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} '{{output.good}}' --input_filename '{{input.daily_rvs}}' --exclude_filename {EXCLUDE_FILENAME} --overwrite")
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} '{{output.bad}}' --input_filename '{{input.daily_rvs}}' --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} '{{output.good}}' --input_filename 'daily_rvs_{{wildcards.linelist_key}}_{{wildcards.ccfs_flag_key}}.csv' --exclude_filename {EXCLUDE_FILENAME} --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} '{{output.bad}}' --input_filename 'daily_rvs_{{wildcards.linelist_key}}_{{wildcards.ccfs_flag_key}}.csv' --overwrite")
