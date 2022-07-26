@@ -27,9 +27,12 @@ echo $SLURM_JOB_NODELIST
 ####################################################################
 
 # set the start and end dates to download data for
-START_DATE="2022-05-29"
-END_DATE="2022-05-29"
+START_DATE="2022-05-26"
+END_DATE="2022-05-27"
 #END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
+
+# Choose wheather to run the summary reports, including report_monthly, report_all and combine_rvs
+SUMMARY_REPORT=1
 
 # Choose whether to run jobs in cluster mode or serial mode:
 # 1: cluster mode
@@ -83,6 +86,11 @@ then
 else
     snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1
     # snakemake --configfile config.yaml --config start_date=2022-05-29 end_date=2022-05-29 pipeline_dir=/storage/home/dus73/work/pipeline -np # dry run
+fi
+
+if(( $SUMMARY_REPORT==1 ))
+then
+    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 --forceall summary_report
 fi
 
 # Printing out job summary
