@@ -14,6 +14,7 @@ CCF_TEMPLATE_DATE = config["params"]["ccf_template_date"]
 
 import os
 from datetime import datetime, timedelta
+from math import floor
 
 # Use the USER_ID provided in config.yaml if provided;
 # otherwise, use the environment variable USER
@@ -45,15 +46,23 @@ end_date = datetime.strptime(config["end_date"], "%Y-%m-%d").date()
 delta = end_date - start_date
 DATES = [(start_date + timedelta(days=x)).strftime("%Y/%m/%d") for x in range(delta.days + 1)]
 
+start_month = start_date.year * 12 + start_date.month
+end_month = end_date.year * 12 + end_date.month
+YEAR_MONTHS = [f"{floor(x/12)}/12" if x%12 == 0 else f"{floor(x/12)}/{x%12:02d}" for x in range(start_month, end_month + 1)]
+
 # Get NExScI login credentials
 NEXSCI_ID = config["params"]["NEXSCI_ID"]  
 
 rule all:
     input:
-        expand(f"{OUTPUT_DIR}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml", date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys())),
+        expand(f"{OUTPUT_DIR}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml", date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys()))
+
+
+rule summary_report:
+    input:
         expand(f"{OUTPUT_DIR}/combined_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv", linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys())),
         expand(f"{OUTPUT_DIR}/summary_{{linelist_key}}_{{ccfs_flag_key}}.csv", linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys())),
-        #expand(f"{OUTPUT_DIR}/{{year}}/{{month}}/monthly_summary.csv",year=YEARS,month=MONTHS), # TODO: Figure out how to impelement 
+        expand(f"{OUTPUT_DIR}/{{year_month}}/monthly_summary_{{linelist_key}}_{{ccfs_flag_key}}.csv", year_month=YEAR_MONTHS, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys())), 
 
 
 rule download_L0:
@@ -92,7 +101,7 @@ rule prep_pyro:
     input:
         metafile_L0=f"{INPUT_L0_DIR}/{{date}}/meta.csv",
         metafile_L2=f"{INPUT_L2_DIR}/{{date}}/meta.csv",
-        verified_L0=f"{INPUT_L0_DIR}/{{date}}/0_download_verified",
+        #verified_L0=f"{INPUT_L0_DIR}/{{date}}/0_download_verified",
         verified_L2=f"{INPUT_L2_DIR}/{{date}}/0_download_verified",
     output:
         f"{PYRHELIO_DIR}/{{date}}/pyrheliometer.csv"
@@ -152,32 +161,33 @@ rule report_daily:
 
 rule report_monthly:
     input:
-        #expand(f"{OUTPUT_DIR}/{{year}}/{{month}}/{{day}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml",year=YEARS,month=MONTHS,day=DAYS)   # Not implemented yet, but eventually could look up info from these.  Need way to exclude days with no data
-         glob_wildcards(f"{OUTPUT_DIR}/{{year}}/{{month}}/{{day}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml", followlinks=True)
+        #f"{OUTPUT_DIR}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml"
     output:
-        f"{OUTPUT_DIR}/{{year}}/{{month}}/monthly_summary_{{linelist_key}}_{{ccfs_flag_key}}.csv"
+        good=f"{OUTPUT_DIR}/{{year_month}}/monthly_summary_{{linelist_key}}_{{ccfs_flag_key}}.csv",
+        bad=f"{OUTPUT_DIR}/{{year_month}}/monthly_summary_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["REPORT_MONTHLY_VERSION"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR}/{{year}}/{{month}} '{{output}}' --input_filename 'daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml' --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR}/{{wildcards.year_month}} '{{output.good}}' --input_filename 'daily_summary_{{wildcards.linelist_key}}_{{wildcards.ccfs_flag_key}}.toml' --exclude_filename {EXCLUDE_FILENAME} --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR}/{{wildcards.year_month}} '{{output.bad}}' --input_filename 'daily_summary_{{wildcards.linelist_key}}_{{wildcards.ccfs_flag_key}}.toml' --overwrite")
 
 rule report_all:
     input:
-        daily_summary = expand(f"{OUTPUT_DIR}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml", date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys()))
+        #daily_summary = f"{OUTPUT_DIR}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml"
     output:
         good=f"{OUTPUT_DIR}/summary_{{linelist_key}}_{{ccfs_flag_key}}.csv",
         bad=f"{OUTPUT_DIR}/summary_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["REPORT_ALL_VERSION"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} '{{output.good}}' --input_filename '{{input.daily_summary}}' --exclude_filename {EXCLUDE_FILENAME} --overwrite")
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} '{{output.bad}}' --input_filename '{{input.daily_summary}}' --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} '{{output.good}}' --input_filename 'daily_summary_{{wildcards.linelist_key}}_{{wildcards.ccfs_flag_key}}.toml' --exclude_filename {EXCLUDE_FILENAME} --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_reports_v{{version}}.jl {OUTPUT_DIR} '{{output.bad}}' --input_filename 'daily_summary_{{wildcards.linelist_key}}_{{wildcards.ccfs_flag_key}}.toml' --overwrite")
 
 rule combine_rvs:
     input:
-        daily_rvs = expand(f"{OUTPUT_DIR}/{{date}}/daily_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv", date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys()))
+        #daily_rvs = f"{OUTPUT_DIR}/{{date}}/daily_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     output:
         good=f"{OUTPUT_DIR}/combined_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv",
         bad=f"{OUTPUT_DIR}/combined_rvs_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["COMBINE_RVS_VERSION"]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} '{{output.good}}' --input_filename '{{input.daily_rvs}}' --exclude_filename {EXCLUDE_FILENAME} --overwrite")
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} '{{output.bad}}' --input_filename '{{input.daily_rvs}}' --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} '{{output.good}}' --input_filename 'daily_rvs_{{wildcards.linelist_key}}_{{wildcards.ccfs_flag_key}}.csv' --exclude_filename {EXCLUDE_FILENAME} --overwrite")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} '{{output.bad}}' --input_filename 'daily_rvs_{{wildcards.linelist_key}}_{{wildcards.ccfs_flag_key}}.csv' --overwrite")
