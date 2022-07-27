@@ -48,7 +48,7 @@ DATES = [(start_date + timedelta(days=x)).strftime("%Y/%m/%d") for x in range(de
 
 start_month = start_date.year * 12 + start_date.month
 end_month = end_date.year * 12 + end_date.month
-YEAR_MONTHS = [f"{floor(x/12)}/12" if x%12 == 0 else f"{floor(x/12)}/{x%12:02d}" for x in range(start_month, end_month + 1)]
+YEAR_MONTHS = [f"{floor(x/12)-1}/12" if x%12 == 0 else f"{floor(x/12)}/{x%12:02d}" for x in range(start_month, end_month + 1)]
 
 # Get NExScI login credentials
 NEXSCI_ID = config["params"]["NEXSCI_ID"]  
@@ -101,7 +101,7 @@ rule prep_pyro:
     input:
         metafile_L0=f"{INPUT_L0_DIR}/{{date}}/meta.csv",
         metafile_L2=f"{INPUT_L2_DIR}/{{date}}/meta.csv",
-        #verified_L0=f"{INPUT_L0_DIR}/{{date}}/0_download_verified",
+        #verified_L0=f"{INPUT_L0_DIR}/{{date}}/0_download_verified", # TODO: temporarily disabled because julia verification code depends on swversion. Enable this line once the dependency in julia code is resolved.
         verified_L2=f"{INPUT_L2_DIR}/{{date}}/0_download_verified",
     output:
         f"{PYRHELIO_DIR}/{{date}}/pyrheliometer.csv"
