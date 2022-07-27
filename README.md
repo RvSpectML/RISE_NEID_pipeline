@@ -125,3 +125,29 @@ Create an empty data_paths.jl (`touch data_paths.jl`) in NeidSolarScripts.jl.  (
 ```
 $ sbatch pipeline.slurm
 ```
+
+# Executing the snakemake pipeline
+
+In pipeline.slurm, there is a variable "SUMMARY_REPORT". If SUMMARY_REPORT=0, only steps up to report_daily will be run; if SUMMARY_REPORT=1, additional steps including report_monnthly, report_all annd combine_rvs will also be run.
+
+The report_monnthly step will run for each month between (and including) the input start_date and end_date.
+
+The report_all annd combine_rvs steps will run for all the data in the output folder, regardles of the input start_date and end_date.
+
+Sometimes we need to re-execute the entire or part of the pipeline, while other times we want to avoid unnecessary re-execution. Here we list some common scenarios.
+
+#### Scenario 1. Remove L0 data will not trigger re-execution.
+
+L0 files are large and they are not needed in the steps beyond prep_pyro. To save storage space, we can safely discard the old L0 files that have already been processed. This will not trigger re-execution of the pipeline as long as we do not add the "--forceall" option.
+
+Note that although removing the input file does trigger re-execution, **changes** to the input file will trigger the re-execution of the downstream steps.
+
+#### Scenario 2. Input raw data has been updated and needs to be re-downloaded
+
+The input raw data on https://neid.ipac.caltech.edu/search.php may be updated from time to time. When its swversion is updated to a new major and/or minor version, we may want to download the newer version of data and re-run the pipeline. To do so, set the new swversion in config.yaml, and snakemake will detect the change and re-run the pipeline on all the dates between the given start_date and end_date, including downloading the new version of data and the downstream data processings.
+
+When only the patch version is updated or you simply want to re-run the pipeline, add the "--forceall" option to the snakemake command.
+
+#### Scenario 3. Run with different rules and/or parameter sets
+
+When a rule is updated in the Snakefile, or the parameter used in the rule (either set in the Snakefile directly, passed in from the config file or from the "snakemake --config" command) is changed, that step and all the downstream steps will be re-run. 
