@@ -27,12 +27,15 @@ echo $SLURM_JOB_NODELIST
 ####################################################################
 
 # set the start and end dates to download data for
-START_DATE="2022-05-26"
-END_DATE="2022-05-27"
+START_DATE="2021-12-19"
+END_DATE="2021-12-20"
 #END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
 
-# Choose wheather to run the summary reports, including report_monthly, report_all and combine_rvs
-SUMMARY_REPORT=1
+# Choose whether to download and process daily data or to generate summary reports:
+# DAILY:   download and process daily data for the given days, including download L0/L2 data, 
+#              generate pyrheliometer and manifest files, calculate ccfs and rvs, generate daily reports
+# SUMMARY: generate summary reports, including report_monthly, report_all and combine_rvs
+PIPELINE_MODE=DAILY
 
 # Choose whether to run jobs in cluster mode or serial mode:
 # 1: cluster mode
@@ -80,16 +83,16 @@ else
     export PATH=${JULIA_PATH}:$PATH
 fi
 
-if(( $CLUSTER_MODE==1))
+if [[ $PIPELINE_MODE == DAILY ]]
 then
-    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 # --groups prep_pyro=group0 prep_manifest=group0 calc_ccfs=group0 calc_rvs=group0 report_daily=group0 --group-components group0=3 # --forcerun manifest
+    if [[ $CLUSTER_MODE == 1 ]]
+    then
+        snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 # --groups prep_pyro=group0 prep_manifest=group0 calc_ccfs=group0 calc_rvs=group0 report_daily=group0 --group-components group0=3 # --forcerun manifest
+    else
+        snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1
+        # snakemake --configfile config.yaml --config start_date=2022-05-29 end_date=2022-05-29 pipeline_dir=/storage/home/dus73/work/pipeline -np # dry run
+    fi
 else
-    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1
-    # snakemake --configfile config.yaml --config start_date=2022-05-29 end_date=2022-05-29 pipeline_dir=/storage/home/dus73/work/pipeline -np # dry run
-fi
-
-if(( $SUMMARY_REPORT==1 ))
-then
     snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 --forceall summary_report
 fi
 

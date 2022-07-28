@@ -125,3 +125,53 @@ Create an empty data_paths.jl (`touch data_paths.jl`) in NeidSolarScripts.jl.  (
 ```
 $ sbatch pipeline.slurm
 ```
+
+# Executing the snakemake pipeline
+
+#### Separate workspace and half-shared data repository for different users
+
+Each user should create their own workspace, and within their workspace, they can furtheer create subfolders for different runs, e.g. PIPELINE_ROOT/work/USERID/test1. The user then copy Snakefile, config.yaml and pipeline slurm/shell script from the shared repository to this folder, and make changes to the files in their own folder. File nexsci_id.toml that includes the username and password for neid might also be needed here.
+
+Once snakemake is started, .snakemake will be created in this work subfolder that keeps track of the snakemake jobs. A lock will be placed when a snakemake pipeline is running, and no other runs are allowed in this subfolder. However, users can start another run in a different workspace as long as the output files will not interfere with each other (see below).
+
+The L0/L2 data, pyrheliometer files and manifest files are relatively stable and once created, they can be shared between different users and different pipeline runs.
+
+- data/INPUT_VERSION/L0/
+
+- data/INPUT_VERSION/L2/
+
+- data/INPUT_VERSION/pyrheliometer/
+
+- data/INPUT_VERSION/manifest/
+
+The downstream analysis often varies with different parameter sets, so we put those outputs in specific USER_ID and PIPELINE_ID subfolders. 
+
+- data/INPUT_VERSION/outputs/USER_ID/PIPELINE_ID/
+
+In this way different users can run their own versions of downstream analysis without interfering each other. 
+
+#### Pipeline mode: DAILY vs SUMMARY
+
+In pipeline.slurm, there is a variable "PIPELINE_MODE". 
+
+If PIPELINE_MODE=DAILY, daily data will be downloaded and processed for each day between the given start_date and end_date. Specifically, this mode includes downloding L0/L2 data, generating pyrheliometer and manifest files, calculating ccfs and rvs, and generating daily reports.
+
+If PIPELINE_MODE=SUMMARY, steps that generate summary reports, including report_monnthly, report_all annd combine_rvs, will be run. The report_monnthly runs on each month between (and including) the given start_date and end_date. The report_all and combine_rvs steps run on all the data in the output folder, regardles of the given start_date and end_date.
+
+Sometimes we need to re-execute the entire or part of the pipeline, while other times we want to avoid unnecessary re-execution. Here we list some common scenarios.
+
+#### Scenario 1. Remove L0 data will not trigger re-execution.
+
+L0 files are large and they are not needed in the steps beyond prep_pyro. To save storage space, we can safely discard the old L0 files that have already been processed. This will not trigger re-execution of the pipeline as long as we do not add the "--forceall" option.
+
+Note that although removing the input file of a rule does not trigger re-execution, **changes** to the input file will trigger the re-execution of the downstream steps.
+
+#### Scenario 2. Input raw data has been updated and needs to be re-downloaded
+
+The input raw data on https://neid.ipac.caltech.edu/search.php may be updated from time to time. When its swversion is updated to a new major and/or minor version, we may want to download the newer version of data and re-run the pipeline. To do so, set the new swversion in config.yaml, and snakemake will detect the change and re-run the pipeline on all the dates between the given start_date and end_date, including downloading the new version of data and the downstream data processings.
+
+When only the patch version is updated or you simply want to re-run the pipeline, add the "--forceall" option to the snakemake command.
+
+#### Scenario 3. Run with different rules and/or parameter sets
+
+When a rule is updated in the Snakefile, or the parameter used in the rule (either set in the Snakefile directly, passed in from the config file or from the "snakemake --config" command) is changed, that step and all the downstream steps will be re-run. 
