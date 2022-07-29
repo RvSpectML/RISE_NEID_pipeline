@@ -67,33 +67,18 @@ rule summary_report:
 
 rule download_L0:
     output:
-        f"{INPUT_L0_DIR}/{{date}}/meta.csv"
+        meta=f"{INPUT_L0_DIR}/{{date}}/meta.csv",
+        #verified=f"{INPUT_L0_DIR}/{{date}}/0_download_verified"  # TODO temporarily disabled because the current julia verification code depends on swversion
     run:
         shell(f"python {DOWNLOAD_SCRIPT} {INPUT_L0_DIR} {{wildcards.date}} {INPUT_VERSION} 0")
-    
+        #shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl {INPUT_L0_DIR}/{{wildcards.date}} --checksums")    
     
 rule download_L2:
     output:
-        f"{INPUT_L2_DIR}/{{date}}/meta.csv"
+        meta=f"{INPUT_L2_DIR}/{{date}}/meta.csv",
+        verified=f"{INPUT_L2_DIR}/{{date}}/0_download_verified"
     run:
         shell(f"python {DOWNLOAD_SCRIPT} {INPUT_L2_DIR} {{wildcards.date}} {INPUT_VERSION} 2")
-
-
-rule verify_L0:
-    input:
-        f"{INPUT_L0_DIR}/{{date}}/meta.csv"
-    output:
-        f"{INPUT_L0_DIR}/{{date}}/0_download_verified"
-    run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl {INPUT_L0_DIR}/{{wildcards.date}} --checksums")
-
-
-rule verify_L2:
-    input:
-        f"{INPUT_L2_DIR}/{{date}}/meta.csv"
-    output:
-        f"{INPUT_L2_DIR}/{{date}}/0_download_verified"
-    run:
         shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl {INPUT_L2_DIR}/{{wildcards.date}} --checksums")
 
 
