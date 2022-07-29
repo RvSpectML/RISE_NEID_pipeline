@@ -128,11 +128,35 @@ $ sbatch pipeline.slurm
 
 # Executing the snakemake pipeline
 
-In pipeline.slurm, there is a variable "SUMMARY_REPORT". If SUMMARY_REPORT=0, only steps up to report_daily will be run; if SUMMARY_REPORT=1, additional steps including report_monnthly, report_all annd combine_rvs will also be run.
+#### Separate workspace and half-shared data repository for different users
 
-The report_monnthly step will run for each month between (and including) the input start_date and end_date.
+Each user should create their own workspace, and within their workspace, they can furtheer create subfolders for different runs, e.g. PIPELINE_ROOT/work/USERID/test1. The user then copy Snakefile, config.yaml and pipeline slurm/shell script from the shared repository to this folder, and make changes to the files in their own folder. File nexsci_id.toml that includes the username and password for neid might also be needed here.
 
-The report_all annd combine_rvs steps will run for all the data in the output folder, regardles of the input start_date and end_date.
+Once snakemake is started, .snakemake will be created in this work subfolder that keeps track of the snakemake jobs. A lock will be placed when a snakemake pipeline is running, and no other runs are allowed in this subfolder. However, users can start another run in a different workspace as long as the output files will not interfere with each other (see below).
+
+The L0/L2 data, pyrheliometer files and manifest files are relatively stable and once created, they can be shared between different users and different pipeline runs.
+
+- data/INPUT_VERSION/L0/
+
+- data/INPUT_VERSION/L2/
+
+- data/INPUT_VERSION/pyrheliometer/
+
+- data/INPUT_VERSION/manifest/
+
+The downstream analysis often varies with different parameter sets, so we put those outputs in specific USER_ID and PIPELINE_ID subfolders. 
+
+- data/INPUT_VERSION/outputs/USER_ID/PIPELINE_ID/
+
+In this way different users can run their own versions of downstream analysis without interfering each other. 
+
+#### Pipeline mode: DAILY vs SUMMARY
+
+In pipeline.slurm, there is a variable "PIPELINE_MODE". 
+
+If PIPELINE_MODE=DAILY, daily data will be downloaded and processed for each day between the given start_date and end_date. Specifically, this mode includes downloding L0/L2 data, generating pyrheliometer and manifest files, calculating ccfs and rvs, and generating daily reports.
+
+If PIPELINE_MODE=SUMMARY, steps that generate summary reports, including report_monnthly, report_all annd combine_rvs, will be run. The report_monnthly runs on each month between (and including) the given start_date and end_date. The report_all and combine_rvs steps run on all the data in the output folder, regardles of the given start_date and end_date.
 
 Sometimes we need to re-execute the entire or part of the pipeline, while other times we want to avoid unnecessary re-execution. Here we list some common scenarios.
 
@@ -140,7 +164,7 @@ Sometimes we need to re-execute the entire or part of the pipeline, while other 
 
 L0 files are large and they are not needed in the steps beyond prep_pyro. To save storage space, we can safely discard the old L0 files that have already been processed. This will not trigger re-execution of the pipeline as long as we do not add the "--forceall" option.
 
-Note that although removing the input file does trigger re-execution, **changes** to the input file will trigger the re-execution of the downstream steps.
+Note that although removing the input file of a rule does not trigger re-execution, **changes** to the input file will trigger the re-execution of the downstream steps.
 
 #### Scenario 2. Input raw data has been updated and needs to be re-downloaded
 
