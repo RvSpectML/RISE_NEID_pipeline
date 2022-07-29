@@ -35,13 +35,10 @@ If your pipeline_dir is not already prepared, then we set it up to have the foll
 ```
 
 -  Clone the snakemake pipeline and starter configuration files.  Rename the folder to shared.  
-(For now, you also need to checkout dev-dshao branch, but that should be removed once its tested and merged.)
+
 ```
 $ git clone git@github.com:RvSpectML/RISE_NEID_pipeline.git
 $ mv RISE_NEID_pipeline shared
-$ cd shared
-$ git checkout dev-dshao
-$ cd ..
 ```
 
 -  Clone the NeidSolarScripts codes
