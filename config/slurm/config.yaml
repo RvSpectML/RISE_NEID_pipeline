@@ -1,4 +1,5 @@
 cluster: "sbatch --job-name={rule} -A open -p open -t 4:00:00 -N 1 -n 1 --mem=16GB --export=ALL"
+#cluster: "sbatch --job-name={rule} -A ebf11_c -p sla-prio -t 4:00:00 -N 1 -n 1 --mem=16GB --export=ALL"
 jobs: 90
 verbose: true
 notemp: true
