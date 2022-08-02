@@ -47,7 +47,7 @@ CLUSTER_MODE=1
 
 # directory of the pipeline
 #PIPELINE_DIR=/storage/work/dus73/pipeline
-PIPELINE_DIR=/storage/group/ebf11/pipeline
+PIPELINE_DIR=/storage/group/ebf11/group/pipeline
 
 # path to the python virtual environment
 VIRTUAL_ENV=${PIPELINE_DIR}/venv/bin/activate
