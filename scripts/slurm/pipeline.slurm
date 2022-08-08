@@ -47,13 +47,13 @@ CLUSTER_MODE=1
 
 # directory of the pipeline
 #PIPELINE_DIR=/storage/work/dus73/pipeline
-PIPELINE_DIR=/storage/group/ebf11/group/pipeline
+PIPELINE_DIR=/storage/group/ebf11/default/pipeline
 
 # path to the python virtual environment
 VIRTUAL_ENV=${PIPELINE_DIR}/venv/bin/activate
 
 # path to the cluster configuration folder
-PROFILE=${PIPELINE_DIR}/neid_solar/shared/config/slurm/
+PROFILE=${PIPELINE_DIR}/neid_solar/shared/config/slurm-open/
 
 # path to the Snakefile
 SNAKEFILE=Snakefile
