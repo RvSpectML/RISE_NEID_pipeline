@@ -48,22 +48,24 @@ def download_neid(root_dir, date, swversion, level):
                 # filter for the swversion
                 if int(level) > 0: 
                     df_version = df[df['swversion'].str.startswith('v' + swversion)]  
+                else:
+                    df_version = df
+                    
+                # remove meta_all.csv
+                query_result_file_all.unlink()
 
-                if (len(df.index) > 0 ):
+                if len(df_version.index) > 0:
                     # save to meta.csv
                     query_result_file = out_dir.joinpath("meta.csv")
-                    if int(level) > 0:
-                        df_version.to_csv(str(query_result_file))    
-                    else:
-                        df.to_csv(str(query_result_file))    
-
-                    # remove meta_all.csv
-                    query_result_file_all.unlink()
+                    df_version.to_csv(str(query_result_file))     
 
                     # download the fits data
                     Neid.download(str(query_result_file), param["datalevel"], default_format, str(out_dir))            
                 else:
-                    shutil.rmtree(str(out_dir))
+                    # create 0_no_data_available if no data is available
+                    f = open(out_dir.joinpath("0_no_data_available"), "w")
+                    f.close()
+                    
         except Exception as e:
             print(f"Error downloading the data for {date}! {e}")
         except:

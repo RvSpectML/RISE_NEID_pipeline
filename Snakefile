@@ -14,7 +14,8 @@ PREP_CCF_DATE_PATH = config["params"]["prep_ccf_date_path"]
 PREP_CCF_DATE_STR = config["params"]["prep_ccf_date_str"]   # TODO: Compute string from path or vice versa, so reduce risk of typeos (if easy)
 CCF_TEMPLATE_DATE = config["params"]["ccf_template_date"]
 
-import os
+import os, shutil
+from os.path import exists
 from datetime import datetime, timedelta
 from math import floor
 
@@ -46,9 +47,11 @@ CCF_TEMPLATE_DIR = f"{OUTPUT_DIR}/{CCF_TEMPLATE_DATE}"
 # Process days between given dates
 start_date = datetime.strptime(config["start_date"], "%Y-%m-%d").date()
 end_date = datetime.strptime(config["end_date"], "%Y-%m-%d").date()
-
 delta = end_date - start_date
 DATES = [(start_date + timedelta(days=x)).strftime("%Y/%m/%d") for x in range(delta.days + 1)]
+
+# exclude dates with no available data
+DATES = [x for x in DATES if not exists(f"{INPUT_L2_DIR}/{x}/0_no_data_available")]
 
 start_month = start_date.year * 12 + start_date.month
 end_month = end_date.year * 12 + end_date.month
@@ -60,6 +63,19 @@ NEXSCI_ID = config["params"]["NEXSCI_ID"]
 rule all:
     input:
         expand(f"{OUTPUT_DIR}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml", date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys()))
+    run:
+        # remove recent L0 and L2 folders with no data downloaded 
+        # in case data will become available in the future
+        for folder in [INPUT_L0_DIR, INPUT_L2_DIR]:
+            # find the max date with verified data
+            dates_verified, = glob_wildcards(f"{folder}/{{date}}/0_download_verified")
+            date_max_verified = max(dates_verified) 
+        
+            # remove folders with 0_no_data_available whose date is later than date_max_verified
+            dates_no_data, = glob_wildcards(f"{folder}/{{date}}/0_no_data_available")
+            dates_to_remove = [ x for x in dates_no_data if x > date_max_verified ]
+            for date in dates_to_remove:
+                shutil.rmtree(f"{folder}/{date}")
 
 
 rule summary_report:
@@ -75,7 +91,7 @@ rule download_L0:
         #verified=f"{INPUT_L0_DIR}/{{date}}/0_download_verified"  # TODO temporarily disabled because the current julia verification code depends on swversion
     run:
         shell(f"python {DOWNLOAD_SCRIPT} {INPUT_L0_DIR} {{wildcards.date}} {INPUT_VERSION} 0")
-        #shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl {INPUT_L0_DIR}/{{wildcards.date}} --checksums")    
+        #shell(f"[ ! -f {INPUT_L0_DIR}/{{wildcards.date}}/0_no_data_available ] && julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl {INPUT_L0_DIR}/{{wildcards.date}} --checksums")    
     
 rule download_L2:
     output:
@@ -83,7 +99,7 @@ rule download_L2:
         verified=f"{INPUT_L2_DIR}/{{date}}/0_download_verified"
     run:
         shell(f"python {DOWNLOAD_SCRIPT} {INPUT_L2_DIR} {{wildcards.date}} {INPUT_VERSION} 2")
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl {INPUT_L2_DIR}/{{wildcards.date}} --checksums")
+        shell(f"[ ! -f {INPUT_L2_DIR}/{{wildcards.date}}/0_no_data_available ] && julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl {INPUT_L2_DIR}/{{wildcards.date}} --checksums")
 
 
 rule prep_pyro:
