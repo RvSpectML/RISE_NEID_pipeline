@@ -63,19 +63,6 @@ NEXSCI_ID = config["params"]["NEXSCI_ID"]
 rule all:
     input:
         expand(f"{OUTPUT_DIR}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml", date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys()))
-    run:
-        # remove recent L0 and L2 folders with no data downloaded 
-        # in case data will become available in the future
-        for folder in [INPUT_L0_DIR, INPUT_L2_DIR]:
-            # find the max date with verified data
-            dates_verified, = glob_wildcards(f"{folder}/{{date}}/0_download_verified")
-            date_max_verified = max(dates_verified) 
-        
-            # remove folders with 0_no_data_available whose date is later than date_max_verified
-            dates_no_data, = glob_wildcards(f"{folder}/{{date}}/0_no_data_available")
-            dates_to_remove = [ x for x in dates_no_data if x > date_max_verified ]
-            for date in dates_to_remove:
-                shutil.rmtree(f"{folder}/{date}")
 
 
 rule summary_report:
@@ -215,3 +202,20 @@ rule combine_rvs:
     run:
         shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} '{{output.good}}' --input_filename 'daily_rvs_{{wildcards.linelist_key}}_{{wildcards.ccfs_flag_key}}.csv' --exclude_filename {EXCLUDE_FILENAME} --overwrite")
         shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} '{{output.bad}}' --input_filename 'daily_rvs_{{wildcards.linelist_key}}_{{wildcards.ccfs_flag_key}}.csv' --overwrite")
+
+onerror:
+    # remove recent L0 and L2 folders with no data downloaded 
+    # in case data will become available in the future
+    for folder in [INPUT_L0_DIR, INPUT_L2_DIR]:
+        # find dates with no data downloaded
+        dates_no_data, = glob_wildcards(f"{folder}/{{date}}/0_no_data_available")
+        
+        # filter dates_no_data that are later than the most recent date with data  
+        dates_data, = glob_wildcards(f"{folder}/{{date}}/meta.csv")
+        if len(dates_data) > 0:
+            date_data_max = max(dates_data) 
+            # remove folders with 0_no_data_available whose date is later than date_max_verified
+            dates_to_remove = [ x for x in dates_no_data if x > date_data_max ]
+        
+        for date in dates_to_remove:
+            shutil.rmtree(f"{folder}/{date}")
