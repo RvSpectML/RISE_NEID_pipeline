@@ -11,7 +11,7 @@ DOWNLOAD_SCRIPT = PIPELINE_DIR + "/" + config["DOWNLOAD_SCRIPT"]
 LINELISTS = config["params"]["linelist"]
 CCFS_FLAGS = config["params"]["calc_order_ccfs_flags"]
 PREP_CCF_DATE_PATH = config["params"]["prep_ccf_date_path"]
-PREP_CCF_DATE_STR = config["params"]["prep_ccf_date_str"]   # TODO: Compute string from path or vice versa, so reduce risk of typeos (if easy)
+PREP_CCF_DATE_STR = PREP_CCF_DATE_PATH.replace("/", "", 2)
 CCF_TEMPLATE_DATE = config["params"]["ccf_template_date"]
 
 import os, shutil

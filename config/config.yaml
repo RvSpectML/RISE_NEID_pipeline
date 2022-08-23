@@ -16,7 +16,6 @@ PIPELINE_ID: test2
 params: # most filepaths in this section are relative to NEID_SOLAR_SCRIPTS  # TODO: Make relative to analysis run directory
   NEXSCI_ID: nexsci_id.toml   # but this one is relative to analysis run directory
   prep_ccf_date_path: 2021/05/27
-  prep_ccf_date_str: "20210527"
   #anchors: scripts/data/anchors_20210527.jld2
   linelist: 
     orig: scripts/data/linelist_20210208.csv
