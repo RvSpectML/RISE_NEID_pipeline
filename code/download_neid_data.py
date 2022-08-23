@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from pyneid.neid import Neid
 
-def download_neid(root_dir, date, swversion, level):
+def download_neid(root_dir, date, swversion, level, obj, cookie):
     # requested format of the meta file
     default_format = "csv"
     
@@ -21,8 +21,15 @@ def download_neid(root_dir, date, swversion, level):
 
     # query parameters
     param = {}
-    param["datalevel"] = f"solarl{level}"
+    
+    if obj:
+        param["object"] = obj
+        param["datalevel"] = f"l{level}"
+    else:        
+        param["datalevel"] = f"solarl{level}"
+        
     param["datetime"] = f'{date} 00:00:00/{date} 23:59:59'
+    
 
     # skip the following section if the date's data has already been downloaded and verified
     if not out_dir.joinpath("0_download_verified").is_file():
@@ -31,7 +38,10 @@ def download_neid(root_dir, date, swversion, level):
                 query_result_file = out_dir.joinpath("meta_redownload.csv")
 
                 # download the fits data
-                Neid.download(str(query_result_file), param["datalevel"], default_format, str(out_dir)) 
+                if cookie:
+                    Neid.download(str(query_result_file), param["datalevel"], default_format, str(out_dir), cookiepath=cookie) 
+                else:
+                    Neid.download(str(query_result_file), param["datalevel"], default_format, str(out_dir)) 
 
                 # remove meta_redonwload.csv
                 query_result_file.unlink()
@@ -40,7 +50,10 @@ def download_neid(root_dir, date, swversion, level):
                 query_result_file_all = out_dir.joinpath("meta_all.csv")
 
                 # get the meta file
-                Neid.query_criteria(param, format=default_format, outpath=str(query_result_file_all))
+                if cookie:
+                    Neid.query_criteria(param, format=default_format, outpath=str(query_result_file_all), cookiepath=cookie)
+                else:
+                    Neid.query_criteria(param, format=default_format, outpath=str(query_result_file_all))
 
                 # read the meta file
                 df = pd.read_csv(str(query_result_file_all))
@@ -60,7 +73,11 @@ def download_neid(root_dir, date, swversion, level):
                     df_version.to_csv(str(query_result_file))     
 
                     # download the fits data
-                    Neid.download(str(query_result_file), param["datalevel"], default_format, str(out_dir))            
+                    if cookie:
+                        Neid.download(str(query_result_file), param["datalevel"], default_format, str(out_dir), cookiepath=cookie)         
+                    else:
+                        Neid.download(str(query_result_file), param["datalevel"], default_format, str(out_dir)) 
+
                 else:
                     # create 0_no_data_available if no data is available
                     f = open(out_dir.joinpath("0_no_data_available"), "w")
@@ -91,6 +108,8 @@ if __name__ == "__main__":
     parser.add_argument('date', help='date of the data file to download')
     parser.add_argument('swversion', help='software version that creates the input data, e.g. v1.1.2')
     parser.add_argument('level', help='data level, e.g. 0, 1 or 2')
+    parser.add_argument('--object', help='object, e.g. HD 4628. If no object is provided, solar data will be downloaded')
+    parser.add_argument('--cookie', help='filepath to the cookie file that is used to search the proprietary data')
 
     # parse the input arguments
     args = parser.parse_args()
@@ -98,5 +117,5 @@ if __name__ == "__main__":
     date = get_date(args.date)
     
     # download data files
-    download_neid(root_dir, date, args.swversion, args.level)
+    download_neid(root_dir, date, args.swversion, args.level, args.object, args.cookie)
     

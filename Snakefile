@@ -7,17 +7,19 @@ NEID_SOLAR_SCRIPTS = PIPELINE_DIR + "/" + INSTRUMENT + "/" + config["NEID_SOLAR_
 DATA_ROOT = f"{PIPELINE_DIR}/{INSTRUMENT}/data"
 EXCLUDE_FILENAME = DATA_ROOT + "/" + config["EXCLUDE_FILENAME"]
 DOWNLOAD_SCRIPT = PIPELINE_DIR + "/" + config["DOWNLOAD_SCRIPT"]
-
+PROGRAMS = config["PROGRAMS"]
 LINELISTS = config["params"]["linelist"]
 CCFS_FLAGS = config["params"]["calc_order_ccfs_flags"]
 PREP_CCF_DATE_PATH = config["params"]["prep_ccf_date_path"]
-PREP_CCF_DATE_STR = config["params"]["prep_ccf_date_str"]   # TODO: Compute string from path or vice versa, so reduce risk of typeos (if easy)
+PREP_CCF_DATE_STR = PREP_CCF_DATE_PATH.replace("/", "", 2)
 CCF_TEMPLATE_DATE = config["params"]["ccf_template_date"]
 
 import os, shutil
 from os.path import exists
 from datetime import datetime, timedelta
 from math import floor
+from pyneid.neid import Neid
+import pandas as pd
 
 # Use the USER_ID provided in config.yaml if provided;
 # otherwise, use the environment variable USER
@@ -30,7 +32,6 @@ else:
 
 # get the input and output directories
 INPUT_L2_DIR = f"{DATA_ROOT}/v{INPUT_VERSION}/L2"
-INPUT_L0_DIR = f"{DATA_ROOT}/v{INPUT_VERSION}/L0"
 PYRHELIO_TEL_DIR = f"{DATA_ROOT}/pyrheliometer"
 PYRHELIO_DIR = f"{DATA_ROOT}/v{INPUT_VERSION}/pyrheliometer"
 MANIFEST_DIR = f"{DATA_ROOT}/v{INPUT_VERSION}/manifest"
@@ -39,10 +40,10 @@ CCF_TEMPLATE_DIR = f"{OUTPUT_DIR}/{CCF_TEMPLATE_DATE}"
 
 # get the dates
 # Process all days with a saved query, i.e. to make pyrheliometer files from L0s irrespective of whether L2's have been downloaded
-# DATES, = glob_wildcards(f"{INPUT_L2_DIR}/{{date}}/meta.csv", followlinks=True) 
+# DATES, = glob_wildcards(f"{INPUT_L2_DIR}/{{date}}/meta.csv", followlinks=True)
 
 # Only process days with verified L2's (usually line to use)
-# DATES, = glob_wildcards(f"{INPUT_L2_DIR}/{{date}}/0_download_verified", followlinks=True)  
+# DATES, = glob_wildcards(f"{INPUT_L2_DIR}/{{date}}/0_download_verified", followlinks=True)
 
 # Process days between given dates
 start_date = datetime.strptime(config["start_date"], "%Y-%m-%d").date()
@@ -58,27 +59,25 @@ end_month = end_date.year * 12 + end_date.month
 YEAR_MONTHS = [f"{floor(x/12)-1}/12" if x%12 == 0 else f"{floor(x/12)}/{x%12:02d}" for x in range(start_month, end_month + 1)]
 
 # Get NExScI login credentials
-NEXSCI_ID = config["params"]["NEXSCI_ID"]  
+NEXSCI_ID = config["params"]["NEXSCI_ID"]
+
+
+# Get all objects including the standard stars defined in config and the objects in the programs = config["PROGRAMS"]
+objects = config["STANDARD_STARS"]
+for program in programs:
+    param={'datetime': f'{start_date} 00:00:00/{end_date} 23:59:59', 'datalevel': 'l2', 'program': program}
+    metafile = f'meta_{program}.csv'
+    Neid.query_criteria(param, format='csv', outpath=metafile, cookiepath="cookie")
+    df = pd.read_csv(metafile)
+    objects = objects + pd.unique(df['object'])  
+    
+objects = pd.unique(objects)
+
 
 rule all:
     input:
         expand(f"{OUTPUT_DIR}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml", date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys()))
-
-
-rule summary_report:
-    input:
-        expand(f"{OUTPUT_DIR}/combined_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv", linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys())),
-        expand(f"{OUTPUT_DIR}/summary_{{linelist_key}}_{{ccfs_flag_key}}.csv", linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys())),
-        expand(f"{OUTPUT_DIR}/{{year_month}}/monthly_summary_{{linelist_key}}_{{ccfs_flag_key}}.csv", year_month=YEAR_MONTHS, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys())), 
-
-
-rule download_L0:
-    output:
-        meta=f"{INPUT_L0_DIR}/{{date}}/meta.csv",
-        #verified=f"{INPUT_L0_DIR}/{{date}}/0_download_verified"  # TODO temporarily disabled because the current julia verification code depends on swversion
-    run:
-        shell(f"python {DOWNLOAD_SCRIPT} {INPUT_L0_DIR} {{wildcards.date}} {INPUT_VERSION} 0")
-        #shell(f"[ ! -f {INPUT_L0_DIR}/{{wildcards.date}}/0_no_data_available ] && julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl {INPUT_L0_DIR}/{{wildcards.date}} --checksums")    
+        
     
 rule download_L2:
     output:
@@ -89,18 +88,6 @@ rule download_L2:
         shell(f"[ ! -f {INPUT_L2_DIR}/{{wildcards.date}}/0_no_data_available ] && julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl {INPUT_L2_DIR}/{{wildcards.date}} --checksums")
 
 
-rule prep_pyro:
-    input:
-        metafile_L0=f"{INPUT_L0_DIR}/{{date}}/meta.csv",
-        metafile_L2=f"{INPUT_L2_DIR}/{{date}}/meta.csv",
-        #verified_L0=f"{INPUT_L0_DIR}/{{date}}/0_download_verified", # TODO: temporarily disabled because julia verification code depends on swversion. Enable this line once the dependency in julia code is resolved.
-        verified_L2=f"{INPUT_L2_DIR}/{{date}}/0_download_verified",
-    output:
-        f"{PYRHELIO_DIR}/{{date}}/pyrheliometer.csv"
-    version: config["PYRHELIOMETER_VERSION"]
-    run: 
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_pyrheliometer_daily_{{version}}.jl {{input.metafile_L2}} --nexsci_login_filename {NEXSCI_ID} --pyrheliometer_dir {PYRHELIO_TEL_DIR} --work_dir {INPUT_L0_DIR}/{{wildcards.date}} --output {{output}}")
-
 rule prep_manifest:
     input:
         pyrheliometer=f"{PYRHELIO_DIR}/{{date}}/pyrheliometer.csv"
@@ -109,6 +96,7 @@ rule prep_manifest:
     version: config["MANIFEST_VERSION"]
     run:
         shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_manifest_solar_{{version}}.jl  {INPUT_L2_DIR} {MANIFEST_DIR} --subdir {{wildcards.date}} --pyrheliometer {PYRHELIO_DIR} ") 
+        
 
 rule prep_calc_ccfs: # TODO: Work in progress
     input:
@@ -204,20 +192,19 @@ rule combine_rvs:
         shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/examples/combine_daily_rvs_{{version}}.jl {OUTPUT_DIR} '{{output.bad}}' --input_filename 'daily_rvs_{{wildcards.linelist_key}}_{{wildcards.ccfs_flag_key}}.csv' --overwrite")
 
 onerror:
-    # remove recent L0 and L2 folders with no data downloaded 
-    # in case data will become available in the future
-    for folder in [INPUT_L0_DIR, INPUT_L2_DIR]:
-        # find dates with no data downloaded
-        dates_no_data, = glob_wildcards(f"{folder}/{{date}}/0_no_data_available")
+    # remove recent L2 folders with no data downloaded in case data will become available in the future
+    # find dates with no data downloaded
+    dates_no_data, = glob_wildcards(f"{INPUT_L2_DIR}/{{date}}/0_no_data_available")
         
-        # filter dates_no_data that are later than the most recent date with data  
-        dates_data, = glob_wildcards(f"{folder}/{{date}}/meta.csv")
-        if len(dates_data) > 0:
-            date_data_max = max(dates_data) 
-            # remove folders with 0_no_data_available whose date is later than date_max_verified
-            dates_to_remove = [ x for x in dates_no_data if x > date_data_max ]
-        else:
-            dates_to_remove = []
+    # filter dates_no_data that are later than the most recent date with data  
+    dates_data, = glob_wildcards(f"{INPUT_L2_DIR}/{{date}}/meta.csv")
+    if len(dates_data) > 0:
+        date_data_max = max(dates_data) 
+        # remove folders with 0_no_data_available whose date is later than date_max_verified
+        dates_to_remove = [ x for x in dates_no_data if x > date_data_max ]
+    else:
+        dates_to_remove = []
         
-        for date in dates_to_remove:
-            shutil.rmtree(f"{folder}/{date}")
+    for date in dates_to_remove:
+        shutil.rmtree(f"{INPUT_L2_DIR}/{date}")
+

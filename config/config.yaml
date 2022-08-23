@@ -1,7 +1,21 @@
 NEID_SOLAR_SCRIPTS: NeidSolarScripts.jl
 EXCLUDE_FILENAME:  days_to_exclude.csv                          # path relative to data directory
-DOWNLOAD_SCRIPT: neid_solar/shared/code/download_neid_data.py   # path relative to pipeline_dir
-INSTRUMENT: neid_solar
+DOWNLOAD_SCRIPT: neid_night/shared/code/download_neid_data.py   # path relative to pipeline_dir
+INSTRUMENT: neid_night
+STANDARD_STARS:
+  - HD 4628
+  - HD 9407
+  - HD 10700
+  - HD 89269
+  - HD 127334
+  - GJ 699
+  - HD 185144
+  - HD 221354
+PROGRAMS:
+  - 2021A-2015
+  - 2021B-2015
+  - 2021A-0390
+  - 2021B-0450
 INPUT_VERSION: 1.1
 PYRHELIOMETER_VERSION: 1.1
 MANIFEST_VERSION: 1.1
@@ -16,7 +30,6 @@ PIPELINE_ID: test2
 params: # most filepaths in this section are relative to NEID_SOLAR_SCRIPTS  # TODO: Make relative to analysis run directory
   NEXSCI_ID: nexsci_id.toml   # but this one is relative to analysis run directory
   prep_ccf_date_path: 2021/05/27
-  prep_ccf_date_str: "20210527"
   #anchors: scripts/data/anchors_20210527.jld2
   linelist: 
     orig: scripts/data/linelist_20210208.csv
