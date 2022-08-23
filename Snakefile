@@ -216,6 +216,8 @@ onerror:
             date_data_max = max(dates_data) 
             # remove folders with 0_no_data_available whose date is later than date_max_verified
             dates_to_remove = [ x for x in dates_no_data if x > date_data_max ]
+        else:
+            dates_to_remove = []
         
         for date in dates_to_remove:
             shutil.rmtree(f"{folder}/{date}")

@@ -42,9 +42,6 @@ PIPELINE_MODE=DAILY
 # 0: serial mode
 CLUSTER_MODE=1
 
-# TODO?:  Add variable(s) to specify allocation and partition so don't have to change config/slurm/config.yaml
-#         E.g., -A open -p open    or -A ebf11_c -p sla-prio 
-
 # directory of the pipeline
 #PIPELINE_DIR=/storage/work/dus73/pipeline
 PIPELINE_DIR=/storage/group/ebf11/default/pipeline
