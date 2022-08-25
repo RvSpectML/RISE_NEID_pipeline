@@ -32,9 +32,8 @@ END_DATE="2021-12-20"
 #END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
 
 # Choose whether to download and process daily data or to generate summary reports:
-# DAILY:   download and process daily data for the given days, including download L0/L2 data, 
-#              generate pyrheliometer and manifest files, calculate ccfs and rvs, generate daily reports
-# SUMMARY: generate summary reports, including report_monthly, report_all and combine_rvs
+# DAILY:   download and process daily data for the given days;
+# SUMMARY: generate monthly and summary reports.
 PIPELINE_MODE=DAILY
 
 # Choose whether to run jobs in cluster mode or serial mode:
@@ -50,7 +49,7 @@ PIPELINE_DIR=/storage/group/ebf11/default/pipeline
 VIRTUAL_ENV=${PIPELINE_DIR}/venv/bin/activate
 
 # path to the cluster configuration folder
-PROFILE=${PIPELINE_DIR}/shared/config/slurm-open/
+PROFILE=${PIPELINE_DIR}/shared/profile/slurm-open/
 
 # path to the Snakefile
 SNAKEFILE=Snakefile
