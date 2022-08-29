@@ -87,7 +87,7 @@ rule download_L2:
     run:
         shell(f"python {DOWNLOAD_SCRIPT} {INPUT_L2_DIR} {{wildcards.date}} {INPUT_VERSION} 2")
         shell(f"[ ! -f {INPUT_L2_DIR}/{{wildcards.date}}/0_no_data_available ] && julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl {INPUT_L2_DIR}/{{wildcards.date}} --checksums")
-
+        shell(f"[ -f {INPUT_L2_DIR}/{{wildcards.date}}/meta_redownload.csv ] && python {DOWNLOAD_SCRIPT} {INPUT_L2_DIR} {{wildcards.date}} {INPUT_VERSION} 2  && julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl {INPUT_L2_DIR}/{{wildcards.date}} --checksums")
 
 rule prep_pyro:
     input:
