@@ -82,7 +82,7 @@ rule download_L0:
     
 rule download_L2:
     output:
-        #meta=f"{INPUT_L2_DIR}/{{date}}/meta.csv",
+        meta=f"{INPUT_L2_DIR}/{{date}}/meta.csv",
         verified=f"{INPUT_L2_DIR}/{{date}}/0_download_verified"
     run:
         shell(f"python {DOWNLOAD_SCRIPT} {INPUT_L2_DIR} {{wildcards.date}} {INPUT_VERSION} 2")
@@ -92,14 +92,14 @@ rule download_L2:
 rule prep_pyro:
     input:
         metafile_L0=f"{INPUT_L0_DIR}/{{date}}/meta.csv",
-        #metafile_L2=f"{INPUT_L2_DIR}/{{date}}/meta.csv",
+        metafile_L2=f"{INPUT_L2_DIR}/{{date}}/meta.csv",
         #verified_L0=f"{INPUT_L0_DIR}/{{date}}/0_download_verified", # TODO: temporarily disabled because julia verification code depends on swversion. Enable this line once the dependency in julia code is resolved.
         verified_L2=f"{INPUT_L2_DIR}/{{date}}/0_download_verified",
     output:
         f"{PYRHELIO_DIR}/{{date}}/pyrheliometer.csv"
     version: config["PYRHELIOMETER_VERSION"]
     run: 
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_pyrheliometer_daily_{{version}}.jl {INPUT_L2_DIR}/{{wildcards.date}}/meta.csv --nexsci_login_filename {NEXSCI_ID} --pyrheliometer_dir {PYRHELIO_TEL_DIR} --work_dir {INPUT_L0_DIR}/{{wildcards.date}} --output {{output}}")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/make_pyrheliometer_daily_{{version}}.jl {{input.metafile_L2}} --nexsci_login_filename {NEXSCI_ID} --pyrheliometer_dir {PYRHELIO_TEL_DIR} --work_dir {INPUT_L0_DIR}/{{wildcards.date}} --output {{output}}")
 
 rule prep_manifest:
     input:
