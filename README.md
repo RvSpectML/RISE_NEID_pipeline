@@ -12,7 +12,7 @@ This is an automated snakemake pipeline for NEID data processing.
 
 -  Make sure julia depot is somewhere you'll have sufficient storage space and isn't slow (i.e., not home on Roar).  
 ```
-mkdir /storage/work/USERID/julia_depto; 
+mkdir /storage/work/USERID/julia_depot; 
 ln -s  /storage/work/USERID/julia_depot ~/.julia
 ```
 
@@ -27,26 +27,46 @@ $ cd pipeline_dir
 If your pipeline_dir is not already prepared, then we set it up to have the following structure in the next few sub-steps:
 
 ```
-├── data                  (will contain many large data files)
-├── NeidSolarScripts.jl   (code to perform the actual analysis)
-├── shared                (code with Snakemake pipeline and configuration files)
-├── venv                  (provides python environment)
-└── work                  (contains subdirectories with configuration files and small input data files for each analysis run)
+├── shared                  (code with Snakemake pipeline and configuration files)
+├── venv                    (provides python environment)
+├── neid_solar
+|   ├── NeidSolarScripts.jl (code to perform the actual analysis)
+|   ├── data                (will contain many large data files)
+|   └── work                (copy neid_solar workflow files here and submit jobs)
+└── neid_night 
+    ├── data                (will contain many large data files)
+    └── work                (copy neid_night workflow files here and submit jobs)
 ```
 
--  Clone the snakemake pipeline and starter configuration files.  Rename the folder to shared.  
+- Clone the snakemake pipeline and starter configuration files.  Rename the folder to shared.  
 
 ```
 $ git clone git@github.com:RvSpectML/RISE_NEID_pipeline.git
 $ mv RISE_NEID_pipeline shared
 ```
 
--  Clone the NeidSolarScripts codes
+- Create the virtual environment and install packages such as snakemake and pyNeid
+
+```
+$ python3 -m venv venv
+$ source venv/bin/activate
+$ pip install --upgrade pip
+$ pip install -r shared/envs/requirements.txt
+```
+
+## Set up neid_solar sub-folder in pipeline_dir
+
+```
+$ mkdir neid_solar
+$ cd neid_solar
+```
+
+### 1.  Clone the NeidSolarScripts codes
 ```
 $ git clone git@github.com:RvSpectML/NeidSolarScripts.jl.git
 ```
  
--  Instantiate the NeidSolarScripts project so that julia downloads and installs dependancies. 
+Instantiate the NeidSolarScripts project so that julia downloads and installs dependancies. 
 (We temporarily removed Rcall from the Project.toml as R has not been installed on RoarCollab.)
 
 ```
@@ -55,8 +75,16 @@ $ julia --project=NeidSolarScripts.jl
 > Pkg.instantiate()
 > exit()
 ```
+Copy the following into the NeidSolarScripts.jl folder (**TODO:** probably should move the following to the work directories)
 
--  Create the data sub-directory (On RoarCollab, its `/storage/group/ebf11/default/pipeline/neid_solar/data`.)
+- data/  (**TODO:** Need to clarify what's needed)
+- scripts/anchors_*.jld2
+- scripts/linelist_*.csv
+
+### 2.  Create the data sub-directory 
+
+(On RoarCollab, its `/storage/group/ebf11/default/pipeline/neid_solar/data`.)
+
 ```
 $ mkdir data 
 ```
@@ -74,28 +102,39 @@ Copy the following data into the data sub-directory
  cd ../..
  ```
 
--  Create a directory to contain workspaces
+### 3.  Create a directory to contain workspaces
+
 ```
 $ mkidr -p work
 ```
 
-- Create the virtual environment and install packages such as snakemake and pyNeid
+## Set up neid_night sub-folder in pipeline_dir
+
 ```
-$ python3 -m venv venv
-$ source venv/bin/activate
-$ pip install --upgrade pip
-$ pip install -r shared/envs/requirements.txt
+$ mkdir neid_night
+$ cd neid_night
 ```
 
-### 3.  Copy data files used for analysis
-Copy the following into the NeidSolarScripts.jl folder (**TODO:** probably should move the following to the work directories)
+### 1.  Create the data sub-directory 
 
-- data/  (**TODO:** Need to clarify what's needed)
-- scripts/anchors_*.jld2
-- scripts/linelist_*.csv
+(On RoarCollab, its `/storage/group/ebf11/default/pipeline/neid_night/data`.)
+
+```
+$ mkdir data 
+```
+
+### 2.  Create a directory to contain workspaces
+
+```
+$ mkidr -p work
+```
+
 
 ## Run pipeline
-### 4.  Create a workspace for an analysis run.  
+
+It's very similar to run neid_solar and neid_night jobs. We will take neid_solar as an example unless otherwise noted.
+
+### 1.  Create a workspace for an analysis run.  
 If your have userid USERID and a run to be named `test1`, then you would create  
 ```
 $ mkdir -p work/USERID/test1
@@ -104,21 +143,21 @@ $ cd work/USERID/test1
 
 Copy the template slurm script (`pipeline.slurm`), Snakefile (`Snakefile`) and configuration parameters file (`config.yaml`) into the workspace for your analysis run.
 ```
-$ cp ../../../shared/scripts/slurm/pipeline.slurm .
-$ cp ../../../shared/Snakefile .
-$ cp ../../../config/config.yaml .
+$ cp ../../../../shared/job_submission/slurm/pipeline.slurm .
+$ cp ../../../../shared/neid_solar/Snakefile .
+$ cp ../../../../shared/neid_solar/config.yaml .
 ```
 
 Create file nexsci_id.toml in the workspace that includes the username and password for neid.
 
 Create an empty data_paths.jl (`touch data_paths.jl`) in NeidSolarScripts.jl.  (**TODO:** Update make_manifest_solar.jl so it doesn't need this file.  Or if it really does, make it toml file.)
 
-### 5. Update parameters for your analysis run.
+### 2. Update parameters for your analysis run.
  Change the parameters as needed for your run: 
 - config.yaml
 - pipeline.slurm (see the "UPDATE VARIABLES HERE" section)
 
-### 6.   Submit a slurm job in the workspace  directory
+### 3.   Submit a slurm job in the workspace  directory
 ```
 $ sbatch pipeline.slurm
 ```

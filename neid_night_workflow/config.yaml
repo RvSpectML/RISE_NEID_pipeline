@@ -1,6 +1,6 @@
 NEID_SOLAR_SCRIPTS: NeidSolarScripts.jl
 EXCLUDE_FILENAME:  days_to_exclude.csv  # path relative to data
-DOWNLOAD_SCRIPT: shared/code/download_neid_data.py  # path relative to pipeline_dir
+DOWNLOAD_SCRIPT: shared/download_codes/download_neid_data.py  # path relative to pipeline_dir
 NEXSCI_ID: nexsci_id.toml  # path relative to analysis run directory
 COOKIE: cookie  # path relative to analysis run directory
 INSTRUMENT: neid_night
