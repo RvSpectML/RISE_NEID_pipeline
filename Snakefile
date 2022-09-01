@@ -125,7 +125,7 @@ rule prep_calc_ccfs: # TODO: Work in progress
         range_no_mask_change=config["params"]["range_no_mask_change"],
         ccfs_flag_value=lambda wildcards:CCFS_FLAGS[wildcards.ccfs_flag_key]
     run:
-        shell(f"julia --project={NEID_SOLAR_SCRIPTS} -t 1 {NEID_SOLAR_SCRIPTS}/examples/calc_order_ccfs_using_continuum_{{version}}.jl {{input.manifest}} '{{output.tmp}}' --line_list_filename {{input.linelist_file}}  --recompute_line_weights --orders_to_use={{params.orders_first}} {{params.orders_last}} --range_no_mask_change {{params.range_no_mask_change}} {{params.ccfs_flag_value}} --overwrite --line_list_output_filename '{{output.linelist_file}}' --anchors_filename_output '{{output.anchors}}' ; touch '{{output.anchors}}' ")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} -t 1 {NEID_SOLAR_SCRIPTS}/examples/calc_order_ccfs_using_continuum_{{version}}.jl {{input.manifest}} '{{output.tmp}}' --line_list_filename '{{input.linelist_file}}'  --recompute_line_weights --orders_to_use={{params.orders_first}} {{params.orders_last}} --range_no_mask_change {{params.range_no_mask_change}} {{params.ccfs_flag_value}} --overwrite --line_list_output_filename '{{output.linelist_file}}' --anchors_filename_output '{{output.anchors}}' ; touch '{{output.anchors}}' ")
 
 
 rule calc_ccfs:
