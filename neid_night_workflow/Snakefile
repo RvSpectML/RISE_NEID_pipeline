@@ -6,7 +6,7 @@ INPUT_VERSION = config["INPUT_VERSION"]
 PIPELINE_ID = config["PIPELINE_ID"]
 NEID_SOLAR_SCRIPTS = PIPELINE_DIR + "/neid_solar/" + config["NEID_SOLAR_SCRIPTS"]
 DATA_ROOT = f"{PIPELINE_DIR}/{INSTRUMENT}/data"
-EXCLUDE_FILENAME = DATA_ROOT + "/" + config["EXCLUDE_FILENAME"]
+No_DATA_DAYS_FILENAME = config["No_DATA_DAYS_FILENAME"]
 DOWNLOAD_SCRIPT = PIPELINE_DIR + "/" + config["DOWNLOAD_SCRIPT"]
 PROGRAMS = config["PROGRAMS"]
 LINELISTS = config["params"]["linelist"]
@@ -16,7 +16,6 @@ PREP_CCF_DATE_STR = PREP_CCF_DATE_PATH.replace("/", "", 2)
 CCF_TEMPLATE_DATE = config["params"]["ccf_template_date"]
 
 import os, shutil
-from os.path import exists
 from datetime import datetime, timedelta
 from math import floor
 from pyneid.neid import Neid
@@ -47,21 +46,24 @@ NEXSCI_ID = config["NEXSCI_ID"]
 # Get cookie
 COOKIE = config["COOKIE"] 
 
-# Get all objects including the standard stars defined in config and the objects in the programs = config["PROGRAMS"]
-objects = config["STANDARD_STARS"]
-for program in programs:
-    param={'datetime': f'{start_date} 00:00:00/{end_date} 23:59:59', 'datalevel': 'l2', 'program': program}
-    metafile = f'meta_{program}.csv'
-    Neid.query_criteria(param, format='csv', outpath=metafile, cookiepath=COOKIE)
-    df = pd.read_csv(metafile)
-    objects = objects + pd.unique(df['object'])  
+# Get all objects including the standard stars defined in config and the objects in the programs
+def get_objects():
+    programs = config["PROGRAMS"]
+    objects = config["STANDARD_STARS"]
+    for program in programs:
+        param={'datetime': f'{start_date} 00:00:00/{end_date} 23:59:59', 'datalevel': 'l2', 'program': program}
+        metafile = f'meta_{program}.csv'
+        Neid.query_criteria(param, format='csv', outpath=metafile, cookiepath=COOKIE)
+        df = pd.read_csv(metafile)
+        objects.extend(pd.unique(df['object']))
     
-objects = pd.unique(objects)
+    objects = pd.unique(objects)
+    return objects
 
 
 rule all:
     input:
-        expand(f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml", object=objects, date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys()))
+        lambda wildcards: expand(f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml", object=get_objects(), date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys()))
         
     
 rule download_L2:
@@ -69,8 +71,23 @@ rule download_L2:
         meta=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/L2/{{date}}/meta.csv",
         verified=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/L2/{{date}}/0_download_verified"
     run:
-        shell(f"[ ! -f {DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}/0_no_data_available ] && python {DOWNLOAD_SCRIPT} {DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2 {{wildcards.date}} {INPUT_VERSION} 2 --object {{wildcards.object}} --cookie {COOKIE}")
-        shell(f"[ ! -f {DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}/0_no_data_available ] && julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl {DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}} --checksums")
+        # flag whether to run the download code
+        flag = True
+        
+        # skip running the download code iff run_all_dates=no and date is in no_data_days.csv
+        if config["run_all_dates"] == "no":
+            try:
+                df = pd.read_csv(f"{DATA_ROOT}/{wildcards.object}/v{INPUT_VERSION}/L2/{No_DATA_DAYS_FILENAME}")
+                
+                if wildcards.date in list(df['dates']):
+                    flag = False
+            except Exception as e:
+                print(str(e))
+        
+        if flag:
+            shell(f"python {DOWNLOAD_SCRIPT} '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2' {{wildcards.date}} {INPUT_VERSION} 2 --object '{{wildcards.object}}' --cookie {COOKIE}")
+            shell(f"[ ! -f '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}/0_no_data_available' ] && julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}' --checksums")
+            shell(f"if [ -f '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}/meta_redownload.csv' ]; then python {DOWNLOAD_SCRIPT} '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2' {{wildcards.date}} {INPUT_VERSION} 2  && julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}' --checksums; fi")
 
 
 rule prep_manifest:
@@ -80,7 +97,7 @@ rule prep_manifest:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/{{date}}/manifest.csv"
     version: config["MANIFEST_VERSION"]
     run:
-        shell("touch {output}")
+        shell("touch '{output}'")
 
 
 rule calc_ccfs:
@@ -97,7 +114,7 @@ rule calc_ccfs:
         range_no_mask_change=config["params"]["range_no_mask_change"],
         ccfs_flag_value=lambda wildcards:CCFS_FLAGS[wildcards.ccfs_flag_key]
     run:
-        shell("touch {output}")
+        shell("touch '{output}'")
     
 rule calc_rvs:
     input:
@@ -109,7 +126,7 @@ rule calc_rvs:
     params:
         daily_rvs_flags=config["params"]["daily_rvs_flags"]
     run:
-        shell("touch {output}")
+        shell("touch '{output}'")
 
 
 rule report_daily:
@@ -119,7 +136,7 @@ rule report_daily:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml"
     version: config["REPORT_DAILY_VERSION"]
     run:
-        shell("touch {output}")
+        shell("touch '{output}'")
 
 rule report_monthly:
     input:
@@ -129,8 +146,8 @@ rule report_monthly:
         bad=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{{year_month}}/monthly_summary_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["REPORT_MONTHLY_VERSION"]
     run:
-        shell("touch {output.good}")
-        shell("touch {output.bad}")
+        shell("touch '{output.good}'")
+        shell("touch '{output.bad}'")
 
 rule report_all:
     input:
@@ -140,8 +157,8 @@ rule report_all:
         bad=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/summary_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["REPORT_ALL_VERSION"]
     run:
-        shell("touch {output.good}")
-        shell("touch {output.bad}")
+        shell("touch '{output.good}'")
+        shell("touch '{output.bad}'")
 
 
 rule combine_rvs:
@@ -150,24 +167,41 @@ rule combine_rvs:
         bad=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/combined_rvs_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["COMBINE_RVS_VERSION"]
     run:
-        shell("touch {output.good}")
-        shell("touch {output.bad}")
+        shell("touch '{output.good}'")
+        shell("touch '{output.bad}'")
 
 onerror:
-    # remove recent L2 folders with no data downloaded in case data will become available in the future
-    # find dates with no data downloaded
-    for object in objects:
-        dates_no_data, = glob_wildcards(f"{DATA_ROOT}/{object}/v{INPUT_VERSION}/L2/{{date}}/0_no_data_available")
+    # remove the L2 folders with no data downloaded
+    # and add the date to no_data_days.csv if there's at least one more recent day with data.
+    objects, = glob_wildcards(f"{DATA_ROOT}/{{obj}}/v{INPUT_VERSION}/L2")
+    for obj in objects:
+        L2_folder = f"{DATA_ROOT}/{obj}/v{INPUT_VERSION}/L2"
+        # find dates with no data downloaded
+        dates_no_data, = glob_wildcards(f"{L2_folder}/{{date}}/0_no_data_available")
         
-        # filter dates_no_data that are later than the most recent date with data  
-        dates_data, = glob_wildcards(f"{DATA_ROOT}/{object}/v{INPUT_VERSION}/L2/{{date}}/meta.csv")
+        # find date with data
+        dates_data, = glob_wildcards(f"{L2_folder}/{{date}}/meta.csv")
+        
         if len(dates_data) > 0:
-            date_data_max = max(dates_data) 
-            # remove folders with 0_no_data_available whose date is later than date_max_verified
-            dates_to_remove = [ x for x in dates_no_data if x > date_data_max ]
-        else:
-            dates_to_remove = []
-        
-        for date in dates_to_remove:
-            shutil.rmtree(f"{DATA_ROOT}/{object}/v{INPUT_VERSION}/L2/{date}")
+            # get the most recent date with data
+            date_data_max = max(dates_data)
+            
+            # empty dates that are older than available data are to be saved into the csv
+            dates_to_csv = [ x for x in dates_no_data if x < date_data_max ]
+            
+            if len(dates_to_csv) > 0:
+                # try to add dates from existing no_data_days.csv
+                try:
+                    df = pd.read_csv(f'{L2_folder}/{No_DATA_DAYS_FILENAME}')
+                    dates_to_csv.extend(list(df["dates"]))
+                except:
+                    pass
+                    
+                # sort unique dates and save to file
+                df = pd.DataFrame(sorted(set(dates_to_csv)), columns=["dates"])
+                df.to_csv(f'{L2_folder}/{No_DATA_DAYS_FILENAME}', index=False)
+                    
+        # remove folders with dates_no_data
+        for date in dates_no_data:
+            shutil.rmtree(f"{L2_folder}/{date}")
 

@@ -148,7 +148,7 @@ $ cp ../../../../shared/neid_solar/Snakefile .
 $ cp ../../../../shared/neid_solar/config.yaml .
 ```
 
-Create file nexsci_id.toml in the workspace that includes the username and password for neid.
+Create file nexsci_id.toml in the workspace that includes the username and password for neid. You also need to generate file cookie in the workspace if running a neid_night job.
 
 Create an empty data_paths.jl (`touch data_paths.jl`) in NeidSolarScripts.jl.  (**TODO:** Update make_manifest_solar.jl so it doesn't need this file.  Or if it really does, make it toml file.)
 

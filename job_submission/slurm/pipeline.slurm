@@ -31,6 +31,11 @@ START_DATE="2021-12-19"
 END_DATE="2021-12-20"
 #END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
 
+# whether to run all dates between START_DATE and END_DATE
+# yes: run all dates between START_DATE and END_DATE
+# no: exclude the dates in the file that lists no-data days
+RUN_ALL_DATES=no
+
 # Choose whether to download and process daily data or to generate summary reports:
 # DAILY:   download and process daily data for the given days;
 # SUMMARY: generate monthly and summary reports.
@@ -87,10 +92,9 @@ if [[ $PIPELINE_MODE == DAILY ]]
 then
     if [[ $CLUSTER_MODE == 1 ]]
     then
-        snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20
+        snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} run_all_dates=${RUN_ALL_DATES} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20
     else
-        snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1
-        # snakemake --configfile config.yaml --config start_date=2022-05-29 end_date=2022-05-29 pipeline_dir=/storage/home/dus73/work/pipeline -np # dry run
+        snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} run_all_dates=${RUN_ALL_DATES} pipeline_dir=${PIPELINE_DIR} -c1
     fi
 else
     snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 --forceall summary_report
