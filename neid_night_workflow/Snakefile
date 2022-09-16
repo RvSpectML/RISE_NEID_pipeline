@@ -48,14 +48,25 @@ COOKIE = config["COOKIE"]
 
 # Get all objects including the standard stars defined in config and the objects in the programs
 def get_objects():
+    if config["INCLUDE_STARS_IN_DATA_FOLDER"]:
+        # existing object folders
+        objects, = glob_wildcards(f"{DATA_ROOT}/{{obj}}/v{INPUT_VERSION}/L2")
+    else:
+        objects = []
+    
+    # add the objects explicitly listed in config
+    if config["STANDARD_STARS"]:
+        objects.extend(config["STANDARD_STARS"]) 
+    
+    # add objects in programs in config
     programs = config["PROGRAMS"]
-    objects = config["STANDARD_STARS"]
-    for program in programs:
-        param={'datetime': f'{start_date} 00:00:00/{end_date} 23:59:59', 'datalevel': 'l2', 'program': program}
-        metafile = f'meta_{program}.csv'
-        Neid.query_criteria(param, format='csv', outpath=metafile, cookiepath=COOKIE)
-        df = pd.read_csv(metafile)
-        objects.extend(pd.unique(df['object']))
+    if programs:
+        for program in programs:
+            param={'datetime': f'{start_date} 00:00:00/{end_date} 23:59:59', 'datalevel': 'l2', 'program': program}
+            metafile = f'meta_{program}.csv'
+            Neid.query_criteria(param, format='csv', outpath=metafile, cookiepath=COOKIE)
+            df = pd.read_csv(metafile)
+            objects.extend(pd.unique(df['object']))
     
     objects = pd.unique(objects)
     return objects
@@ -63,7 +74,7 @@ def get_objects():
 
 rule all:
     input:
-        lambda wildcards: expand(f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml", object=get_objects(), date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys()))
+        lambda wildcards: expand(f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml", object=get_objects(), date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys()))
         
     
 rule download_L2:
@@ -103,10 +114,10 @@ rule prep_manifest:
 rule calc_ccfs:
     input:
         manifest=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/{{date}}/manifest.csv",
-        #linelist_file=lambda wildcards:f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/linelist_{PREP_CCF_DATE_STR}_{{linelist_key}}_{{ccfs_flag_key}}.csv",
-        #anchors=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/anchors_{PREP_CCF_DATE_STR}_{{linelist_key}}_{{ccfs_flag_key}}.jld2" 
+        #linelist_file=lambda wildcards:f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/linelist_{PREP_CCF_DATE_STR}_{{linelist_key}}_{{ccfs_flag_key}}.csv",
+        #anchors=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/anchors_{PREP_CCF_DATE_STR}_{{linelist_key}}_{{ccfs_flag_key}}.jld2" 
     output:
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{{date}}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2"
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{date}}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2"
     version: config["CCFS_VERSION"]
     params:
         orders_first=config["params"]["orders_first"],
@@ -118,10 +129,10 @@ rule calc_ccfs:
     
 rule calc_rvs:
     input:
-        ccfs=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{{date}}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2",
-        #template=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{CCF_TEMPLATE_DATE}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2"
+        ccfs=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{date}}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2",
+        #template=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{CCF_TEMPLATE_DATE}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2"
     output:
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{{date}}/daily_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv"
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{date}}/daily_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["RVS_VERSION"]
     params:
         daily_rvs_flags=config["params"]["daily_rvs_flags"]
@@ -131,19 +142,19 @@ rule calc_rvs:
 
 rule report_daily:
     input:
-        rvs=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{{date}}/daily_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv"
+        rvs=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{date}}/daily_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     output:
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml"
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml"
     version: config["REPORT_DAILY_VERSION"]
     run:
         shell("touch '{output}'")
 
 rule report_monthly:
     input:
-        #f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml"
+        #f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml"
     output:
-        good=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{{year_month}}/monthly_summary_{{linelist_key}}_{{ccfs_flag_key}}.csv",
-        bad=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{{year_month}}/monthly_summary_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
+        good=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{year_month}}/monthly_summary_{{linelist_key}}_{{ccfs_flag_key}}.csv",
+        bad=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{year_month}}/monthly_summary_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["REPORT_MONTHLY_VERSION"]
     run:
         shell("touch '{output.good}'")
@@ -151,10 +162,10 @@ rule report_monthly:
 
 rule report_all:
     input:
-        #daily_summary = f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml"
+        #daily_summary = f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml"
     output:
-        good=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/summary_{{linelist_key}}_{{ccfs_flag_key}}.csv",
-        bad=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/summary_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
+        good=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/summary_{{linelist_key}}_{{ccfs_flag_key}}.csv",
+        bad=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/summary_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["REPORT_ALL_VERSION"]
     run:
         shell("touch '{output.good}'")
@@ -163,8 +174,8 @@ rule report_all:
 
 rule combine_rvs:
     output:
-        good=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/combined_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv",
-        bad=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/combined_rvs_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
+        good=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/combined_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv",
+        bad=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/combined_rvs_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
     version: config["COMBINE_RVS_VERSION"]
     run:
         shell("touch '{output.good}'")

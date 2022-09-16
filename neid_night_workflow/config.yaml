@@ -5,6 +5,7 @@ DOWNLOAD_SCRIPT: shared/download_codes/download_neid_data.py  # path relative to
 NEXSCI_ID: nexsci_id.toml  # path relative to analysis run directory
 COOKIE: cookie  # path relative to analysis run directory
 INSTRUMENT: neid_night
+INCLUDE_STARS_IN_DATA_FOLDER: True
 STANDARD_STARS:
   - HD 4628
   - HD 9407
