@@ -29,7 +29,6 @@ def download_neid(root_dir, date, swversion, level, obj, cookie):
         param["datalevel"] = f"solarl{level}"
         
     param["datetime"] = f'{date} 00:00:00/{date} 23:59:59'
-    
 
     # skip the following section if the date's data has already been downloaded and verified
     if not out_dir.joinpath("0_download_verified").is_file():
@@ -70,7 +69,7 @@ def download_neid(root_dir, date, swversion, level, obj, cookie):
                 if len(df_version.index) > 0:
                     # save to meta.csv
                     query_result_file = out_dir.joinpath("meta.csv")
-                    df_version.to_csv(str(query_result_file))     
+                    df_version.to_csv(str(query_result_file), index=False)     
 
                     # download the fits data
                     if cookie:
@@ -85,8 +84,6 @@ def download_neid(root_dir, date, swversion, level, obj, cookie):
                     
         except Exception as e:
             print(f"Error downloading the data for {date}! {e}")
-        except:
-            print(f"Error downloading the data for {date}!")
 
 def get_date(s):
     date = None
@@ -105,8 +102,8 @@ if __name__ == "__main__":
     # define the arguments
     parser = argparse.ArgumentParser(description='Download data from NEID archive.')
     parser.add_argument('root_dir', help='root directory to save the downloaded data files')
-    parser.add_argument('date', help='date of the data file to download')
-    parser.add_argument('swversion', help='software version that creates the input data, e.g. v1.1.2')
+    parser.add_argument('date', help='date of the data file to download. Accepted formats include YYYY-MM-DD, YYYY/MM/DD and MM/DD/YYYY')
+    parser.add_argument('swversion', help='software version that creates the input data, e.g. 1.1 or 1.1.2')
     parser.add_argument('level', help='data level, e.g. 0, 1 or 2')
     parser.add_argument('--object', help='object, e.g. HD 4628. If no object is provided, solar data will be downloaded')
     parser.add_argument('--cookie', help='filepath to the cookie file that is used to search the proprietary data')
