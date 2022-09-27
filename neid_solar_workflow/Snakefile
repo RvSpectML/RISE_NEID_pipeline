@@ -58,7 +58,7 @@ end_month = end_date.year * 12 + end_date.month
 YEAR_MONTHS = [f"{floor(x/12)-1}/12" if x%12 == 0 else f"{floor(x/12)}/{x%12:02d}" for x in range(start_month, end_month + 1)]
 
 # Get NExScI login credentials
-NEXSCI_ID = config["params"]["NEXSCI_ID"]  
+NEXSCI_ID = config["NEXSCI_ID"] 
 
 rule all:
     input:
