@@ -1,11 +1,11 @@
 import argparse
 import pandas as pd
 import shutil
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from pyneid.neid import Neid
 
-def download_neid(root_dir, date, swversion, level, obj, cookie):
+def download_neid(root_dir, date, swversion, level, obj, cookie, cutoff_time_of_day):
     # requested format of the meta file
     default_format = "csv"
     
@@ -28,7 +28,19 @@ def download_neid(root_dir, date, swversion, level, obj, cookie):
     else:        
         param["datalevel"] = f"solarl{level}"
         
-    param["datetime"] = f'{date} 00:00:00/{date} 23:59:59'
+    if cutoff_time_of_day:
+        if type(cutoff_time_of_day) is list and len(cutoff_time_of_day) == 2:
+            start_time = cutoff_time_of_day[0]
+            end_time = cutoff_time_of_day[1]
+            if start_time <= end_time:
+                param["datetime"] = f'{date} {start_time}/{date} {end_time}'
+            else:
+                next_date = date + timedelta(days=1)
+                param["datetime"] = f'{date} {start_time}/{next_date} {end_time}'
+        else:
+            raise Exception("The format of cutoff_time_of_day is wrong!")
+    else:
+        param["datetime"] = f'{date} 00:00:00/{date} 23:59:59'
 
     # skip the following section if the date's data has already been downloaded and verified
     if not out_dir.joinpath("0_download_verified").is_file():
@@ -107,6 +119,7 @@ if __name__ == "__main__":
     parser.add_argument('level', help='data level, e.g. 0, 1 or 2')
     parser.add_argument('--object', help='object, e.g. HD 4628. If no object is provided, solar data will be downloaded')
     parser.add_argument('--cookie', help='filepath to the cookie file that is used to search the proprietary data')
+    parser.add_argument('--cutoff_time_of_day', nargs=2, help='cutoff time of day (24-hour time format in UTC). The input should be a pair of start time and end time, e.g. 22:30:00 16:45:00. If the end time is less than the start time, the end time refers to the time of the next day. Default value: 00:00:00 23:59:59')
 
     # parse the input arguments
     args = parser.parse_args()
@@ -114,5 +127,5 @@ if __name__ == "__main__":
     date = get_date(args.date)
     
     # download data files
-    download_neid(root_dir, date, args.swversion, args.level, args.object, args.cookie)
+    download_neid(root_dir, date, args.swversion, args.level, args.object, args.cookie, args.cutoff_time_of_day)
     
