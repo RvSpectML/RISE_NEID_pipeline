@@ -34,6 +34,11 @@ START_DATE="2022-05-29"
 END_DATE="2022-05-29"
 #END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
 
+# Choose whether to download and process daily data or to generate summary reports:
+# DAILY:   download and process daily data for the given days;
+# SUMMARY: generate monthly and summary reports.
+PIPELINE_MODE=DAILY
+
 # Choose whether to run jobs in cluster mode or serial mode:
 # 1: cluster mode
 # 0: serial mode
@@ -46,7 +51,7 @@ PIPELINE_DIR=/gpfs/group/ebf11/default/pipeline
 VIRTUAL_ENV=${PIPELINE_DIR}/venv/bin/activate
 
 # path to the cluster configuration folder
-PROFILE=${PIPELINE_DIR}/shared/config/pbs-torque/
+PROFILE=${PIPELINE_DIR}/shared/profile/pbs-torque/
 
 # path to the Snakefile
 SNAKEFILE=Snakefile
@@ -81,12 +86,16 @@ else
     export PATH=${JULIA_PATH}:$PATH
 fi
 
-if(( $CLUSTER_MODE==1))
+if [[ $PIPELINE_MODE == DAILY ]]
 then
-    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 #--groups prep_pyro=group0 prep_manifest=group0 calc_ccfs=group0 calc_rvs=group0 report_daily=group0 --group-components group0=3 # --forcerun manifest
+    if [[ $CLUSTER_MODE == 1 ]]
+    then
+        snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20
+    else
+        snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1
+    fi
 else
-    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1
-    # snakemake --configfile config.yaml --config start_date=2022-05-29 end_date=2022-05-29 pipeline_dir=/storage/home/dus73/work/neid_pipeline -np # dry run
+    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 --forceall summary_report
 fi
 
 # Printing out job summary

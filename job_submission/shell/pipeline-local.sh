@@ -25,7 +25,7 @@ PIPELINE_DIR=/storage/group/ebf11/default/pipeline
 VIRTUAL_ENV=${PIPELINE_DIR}/venv/bin/activate
 
 # path to the cluster configuration folder
-PROFILE=${PIPELINE_DIR}/neid_solar/shared/config/slurm/
+PROFILE=${PIPELINE_DIR}/shared/profile/slurm-open/
 
 # path to the Snakefile
 SNAKEFILE=Snakefile
@@ -63,12 +63,16 @@ fi
 
 date
 echo "# Running snakemake"
-if(( $CLUSTER_MODE==1))
+if [[ $PIPELINE_MODE == DAILY ]]
 then
-    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 # --groups prep_pyro=group0 prep_manifest=group0 calc_ccfs=group0 calc_rvs=group0 report_daily=group0 --group-components group0=3 # --forcerun manifest
+    if [[ $CLUSTER_MODE == 1 ]]
+    then
+        snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20
+    else
+        snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1
+    fi
 else
-    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1
-    # snakemake --configfile config.yaml --config start_date=2022-05-29 end_date=2022-05-29 pipeline_dir=/storage/home/dus73/work/pipeline -np # dry run
+    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 --forceall summary_report
 fi
 
 echo "# snakemake exited"

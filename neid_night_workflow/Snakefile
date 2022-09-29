@@ -1,5 +1,3 @@
-# retrieve directories from config file
-# retrieve directories from config file
 PIPELINE_DIR = config["pipeline_dir"]
 INSTRUMENT = config["INSTRUMENT"]
 INPUT_VERSION = config["INPUT_VERSION"]
@@ -14,6 +12,8 @@ CCFS_FLAGS = config["params"]["calc_order_ccfs_flags"]
 PREP_CCF_DATE_PATH = config["params"]["prep_ccf_date_path"]
 PREP_CCF_DATE_STR = PREP_CCF_DATE_PATH.replace("/", "", 2)
 CCF_TEMPLATE_DATE = config["params"]["ccf_template_date"]
+CUTOFF_TIME_OF_DAY_START = config["CUTOFF_TIME_OF_DAY_START"]
+CUTOFF_TIME_OF_DAY_END = config["CUTOFF_TIME_OF_DAY_END"]
 
 import os, shutil
 from datetime import datetime, timedelta
@@ -85,8 +85,8 @@ rule download_L2:
         # flag whether to run the download code
         flag = True
         
-        # skip running the download code iff run_all_dates=no and date is in no_data_days.csv
-        if config["run_all_dates"] == "no":
+        # skip running the download code iff RUN_ALL_DATES=no and date is in no_data_days.csv
+        if config["RUN_ALL_DATES"] == "no":
             try:
                 df = pd.read_csv(f"{DATA_ROOT}/{wildcards.object}/v{INPUT_VERSION}/L2/{No_DATA_DAYS_FILENAME}")
                 
@@ -96,9 +96,9 @@ rule download_L2:
                 print(str(e))
         
         if flag:
-            shell(f"python {DOWNLOAD_SCRIPT} '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2' {{wildcards.date}} {INPUT_VERSION} 2 --object '{{wildcards.object}}' --cookie {COOKIE}")
+            shell(f"python {DOWNLOAD_SCRIPT} '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2' {{wildcards.date}} {INPUT_VERSION} 2 --object '{{wildcards.object}}' --cookie {COOKIE} --cutoff_time_of_day {CUTOFF_TIME_OF_DAY_START} {CUTOFF_TIME_OF_DAY_END}")
             shell(f"[ ! -f '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}/0_no_data_available' ] && julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}' --checksums")
-            shell(f"if [ -f '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}/meta_redownload.csv' ]; then python {DOWNLOAD_SCRIPT} '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2' {{wildcards.date}} {INPUT_VERSION} 2  && julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}' --checksums; fi")
+            shell(f"if [ -f '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}/meta_redownload.csv' ]; then python {DOWNLOAD_SCRIPT} '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2' {{wildcards.date}} {INPUT_VERSION} 2 --object '{{wildcards.object}}' --cookie {COOKIE} --cutoff_time_of_day {CUTOFF_TIME_OF_DAY_START} {CUTOFF_TIME_OF_DAY_END} && julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}' --checksums; fi")
 
 
 rule prep_manifest:
