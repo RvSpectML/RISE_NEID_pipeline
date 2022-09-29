@@ -199,18 +199,10 @@ onerror:
             
             # empty dates that are older than available data are to be saved into the csv
             dates_to_csv = [ x for x in dates_no_data if x < date_data_max ]
-            
-            if len(dates_to_csv) > 0:
-                # try to add dates from existing no_data_days.csv
-                try:
-                    df = pd.read_csv(f'{L2_folder}/{No_DATA_DAYS_FILENAME}')
-                    dates_to_csv.extend(list(df["dates"]))
-                except:
-                    pass
-                    
-                # sort unique dates and save to file
-                df = pd.DataFrame(sorted(set(dates_to_csv)), columns=["dates"])
-                df.to_csv(f'{L2_folder}/{No_DATA_DAYS_FILENAME}', index=False)
+                               
+            # sort unique dates and save to file
+            df = pd.DataFrame(sorted(set(dates_to_csv)), columns=["dates"])
+            df.to_csv(f'{L2_folder}/{No_DATA_DAYS_FILENAME}', index=False)
                     
         # remove folders with dates_no_data
         for date in dates_no_data:
