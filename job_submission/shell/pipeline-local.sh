@@ -11,6 +11,11 @@ START_DATE="2021-05-28"
 END_DATE="2021-05-28"
 #END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
 
+# Choose whether to download and process daily data or to generate summary reports:
+# DAILY:   download and process daily data for the given days;
+# SUMMARY: generate monthly and summary reports.
+PIPELINE_MODE=DAILY
+
 echo "# Attempting to processes dates from $START_DATE to $END_DATE."
 # Choose whether to run jobs in cluster mode or serial mode:
 # 1: cluster mode
