@@ -77,8 +77,6 @@ $ julia --project=NeidSolarScripts.jl
 ```
 Copy the following into the NeidSolarScripts.jl folder (**TODO:** probably should move the following to the work directories)
 
-- data/  (**TODO:** Need to clarify what's needed)
-- scripts/anchors_*.jld2
 - scripts/linelist_*.csv
 
 ### 2.  Create the data sub-directory 
@@ -210,4 +208,4 @@ When only the patch version is updated or you simply want to re-run the pipeline
 
 #### Scenario 3. Run with different rules and/or parameter sets
 
-When a rule is updated in the Snakefile, or the parameter used in the rule (either set in the Snakefile directly, passed in from the config file or from the "snakemake --config" command) is changed, that step and all the downstream steps will be re-run. 
+When a rule is updated in the Snakefile, or the parameter used in the rule (either set in the Snakefile directly, passed in from the config file or from the "snakemake --config" command) is changed, that step and all the downstream steps will be re-run the next time snakemake is run.  The updates will only occur for dates within the date range specified.  If the date range specified does not include previous dates, then the output files would be a mix of output files generated with the old and new rules/parameters.   To prevent the risk of this, when after changing a rule or pipeline parameter, one should generally run the pipeline with the full date range to make sure all affected outputs get updated.
