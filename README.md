@@ -77,7 +77,7 @@ $ julia --project=NeidSolarScripts.jl
 ```
 Copy the following into the NeidSolarScripts.jl folder (**TODO:** probably should move the following to the work directories)
 
-- scripts/linelist_*.csv
+- scripts/data/linelist_*.csv
 
 ### 2.  Create the data sub-directory 
 
