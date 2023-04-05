@@ -18,6 +18,7 @@ CUTOFF_TIME_OF_DAY_END = config["CUTOFF_TIME_OF_DAY_END"]
 import os, shutil
 from datetime import datetime, timedelta
 from math import floor
+from pip._vendor import tomli
 from pyneid.neid import Neid
 import pandas as pd
 
@@ -43,8 +44,14 @@ YEAR_MONTHS = [f"{floor(x/12)-1}/12" if x%12 == 0 else f"{floor(x/12)}/{x%12:02d
 # Get NExScI login credentials
 NEXSCI_ID = config["NEXSCI_ID"]
 
-# Get cookie
-COOKIE = config["COOKIE"] 
+# Create cookie if it not already exists
+COOKIE = "cookie"
+if not os.path.exists(COOKIE):
+    # parse NEXSCI file for user and password
+    with open(NEXSCI_ID, "rb") as f:
+        toml_dict = tomli.load(f)
+        Neid.login(userid=toml_dict["user"], password=toml_dict["password"], cookiepath=COOKIE)
+
 
 # Get all objects including the standard stars defined in config and the objects in the programs
 def get_objects():
