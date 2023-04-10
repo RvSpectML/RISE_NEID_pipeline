@@ -7,11 +7,20 @@ DATA_ROOT = f"{PIPELINE_DIR}/{INSTRUMENT}/data"
 No_DATA_DAYS_FILENAME = config["No_DATA_DAYS_FILENAME"]
 DOWNLOAD_SCRIPT = PIPELINE_DIR + "/" + config["DOWNLOAD_SCRIPT"]
 PROGRAMS = config["PROGRAMS"]
-LINELISTS = config["params"]["linelist"]
-CCFS_FLAGS = config["params"]["calc_order_ccfs_flags"]
-PREP_CCF_DATE_PATH = config["params"]["prep_ccf_date_path"]
-PREP_CCF_DATE_STR = PREP_CCF_DATE_PATH.replace("/", "", 2)
-CCF_TEMPLATE_DATE = config["params"]["ccf_template_date"]
+SSOF_FLAGS = config["params"]["ssof_flags"]
+
+# parse orders
+ORDER_STR = config["params"]["orders"]
+orders = []
+for x in ORDER_STR.split(","): 
+    l = x.strip().split("-")
+    if len(l) == 1:
+        orders.append(l[0])
+    eif len(l) == 2:
+        orders.extend(range(int(l[0]), int(l[1]) + 1))
+    else:
+        raise Exception("Can't parse ORDER_STR!")
+
 CUTOFF_TIME_OF_DAY_START = config["CUTOFF_TIME_OF_DAY_START"]
 CUTOFF_TIME_OF_DAY_END = config["CUTOFF_TIME_OF_DAY_END"]
 
@@ -115,8 +124,10 @@ def update_no_data_days():
 
 
 rule all:
-    input:
-        lambda wildcards: expand(f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml", object=get_objects(), date=DATES, linelist_key=list(LINELISTS.keys()), ccfs_flag_key=list(CCFS_FLAGS.keys()))
+    input:        
+        lambda wildcards: expand(f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/{{date}}/manifest.csv", object=get_objects(), date=DATES),        
+        lambda wildcards: expand(f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results.jld2", object=get_objects(), ssof_flag_key=list(SSOF_FLAGS.keys()), order=orders),
+        lambda wildcards: expand(f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/summary.toml", object=get_objects(), ssof_flag_key=list(SSOF_FLAGS.keys()))
         
     
 rule download_L2:
@@ -151,77 +162,63 @@ rule prep_manifest:
     version: config["MANIFEST_VERSION"]
     run:
         shell("touch '{output}'")
-
-
-rule calc_ccfs:
+        
+        
+rule merge_manifests:
     input:
-        manifest=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/{{date}}/manifest.csv",
-        #linelist_file=lambda wildcards:f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/linelist_{PREP_CCF_DATE_STR}_{{linelist_key}}_{{ccfs_flag_key}}.csv",
-        #anchors=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/anchors_{PREP_CCF_DATE_STR}_{{linelist_key}}_{{ccfs_flag_key}}.jld2" 
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/{{date}}/manifest.csv" 
     output:
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{date}}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2"
-    version: config["CCFS_VERSION"]
-    params:
-        orders_first=config["params"]["orders_first"],
-        orders_last=config["params"]["orders_last"],
-        range_no_mask_change=config["params"]["range_no_mask_change"],
-        ccfs_flag_value=lambda wildcards:CCFS_FLAGS[wildcards.ccfs_flag_key]
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/manifest.csv"
     run:
         shell("touch '{output}'")
-    
-rule calc_rvs:
+        
+        
+rule prep_ssof:
     input:
-        ccfs=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{date}}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2",
-        #template=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{CCF_TEMPLATE_DATE}/daily_ccfs_{{linelist_key}}_{{ccfs_flag_key}}.jld2"
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/manifest.csv" 
     output:
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{date}}/daily_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv"
-    version: config["RVS_VERSION"]
-    params:
-        daily_rvs_flags=config["params"]["daily_rvs_flags"]
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{order}}/data.jld2"
+    run:
+        shell("touch '{output}'")
+        
+        
+rule analyze_ssof:
+    input:
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{order}}/data.jld2"
+    output:
+        results=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results.jld2",
+        results_curv=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results_curv.jld2",
+        results_boot=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results_boot.jld2"
+    run:
+        shell("touch '{output.results}'")
+        shell("touch '{output.results_curv}'")
+        shell("touch '{output.results_boot}'")
+        
+        
+rule post_ssof:
+    input:
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{order}}/data.jld2",
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results.jld2",
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results_curv.jld2",
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results_boot.jld2"
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/manifest.csv"
+    output:
+        results_ssof=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/results_ssof.csv",
+        png=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/*.png
+    run:
+        shell("touch '{output.png}'")
+        shell("touch '{output.results_ssof}'")
+       
+
+rule report_target_ssof:
+    input:
+        manifest=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/manifest.csv",
+        results_ssof=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/results_ssof.csv"
+    output:
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/summary.toml"
     run:
         shell("touch '{output}'")
 
-
-rule report_daily:
-    input:
-        rvs=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{date}}/daily_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv"
-    output:
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml"
-    version: config["REPORT_DAILY_VERSION"]
-    run:
-        shell("touch '{output}'")
-
-rule report_monthly:
-    input:
-        #f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml"
-    output:
-        good=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{year_month}}/monthly_summary_{{linelist_key}}_{{ccfs_flag_key}}.csv",
-        bad=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{year_month}}/monthly_summary_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
-    version: config["REPORT_MONTHLY_VERSION"]
-    run:
-        shell("touch '{output.good}'")
-        shell("touch '{output.bad}'")
-
-rule report_all:
-    input:
-        #daily_summary = f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/{{date}}/daily_summary_{{linelist_key}}_{{ccfs_flag_key}}.toml"
-    output:
-        good=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/summary_{{linelist_key}}_{{ccfs_flag_key}}.csv",
-        bad=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/summary_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
-    version: config["REPORT_ALL_VERSION"]
-    run:
-        shell("touch '{output.good}'")
-        shell("touch '{output.bad}'")
-
-
-rule combine_rvs:
-    output:
-        good=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/combined_rvs_{{linelist_key}}_{{ccfs_flag_key}}.csv",
-        bad=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/combined_rvs_incl_bad_{{linelist_key}}_{{ccfs_flag_key}}.csv"
-    version: config["COMBINE_RVS_VERSION"]
-    run:
-        shell("touch '{output.good}'")
-        shell("touch '{output.bad}'")
 
 onerror:
     update_no_data_days()
