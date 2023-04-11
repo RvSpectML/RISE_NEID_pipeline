@@ -11,13 +11,13 @@ SSOF_FLAGS = config["params"]["ssof_flags"]
 
 # parse orders
 ORDER_STR = config["params"]["orders"]
-orders = []
+ORDERS = []
 for x in ORDER_STR.split(","): 
     l = x.strip().split("-")
     if len(l) == 1:
-        orders.append(l[0])
-    eif len(l) == 2:
-        orders.extend(range(int(l[0]), int(l[1]) + 1))
+        ORDERS.append(l[0])
+    elif len(l) == 2:
+        ORDERS.extend(range(int(l[0]), int(l[1]) + 1))
     else:
         raise Exception("Can't parse ORDER_STR!")
 
@@ -86,6 +86,8 @@ def get_objects():
     
     objects = pd.unique(objects)
     return objects
+    
+OBJECTS = get_objects()
 
 # remove the L2 folders with no data downloaded
 # and add the date to no_data_days.csv if there's at least one more recent day with data.
@@ -124,10 +126,8 @@ def update_no_data_days():
 
 
 rule all:
-    input:        
-        lambda wildcards: expand(f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/{{date}}/manifest.csv", object=get_objects(), date=DATES),        
-        lambda wildcards: expand(f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results.jld2", object=get_objects(), ssof_flag_key=list(SSOF_FLAGS.keys()), order=orders),
-        lambda wildcards: expand(f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/summary.toml", object=get_objects(), ssof_flag_key=list(SSOF_FLAGS.keys()))
+    input:
+        expand(f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/summary.toml", object=OBJECTS, ssof_flag_key=list(SSOF_FLAGS.keys()))
         
     
 rule download_L2:
@@ -135,6 +135,10 @@ rule download_L2:
         meta=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/L2/{{date}}/meta.csv",
         verified=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/L2/{{date}}/0_download_verified"
     run:
+        shell(f"touch '{{output.meta}}'")
+        shell(f"touch '{{output.verified}}'")
+        
+        """
         # flag whether to run the download code
         flag = True
         
@@ -152,6 +156,7 @@ rule download_L2:
             shell(f"python {DOWNLOAD_SCRIPT} '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2' {{wildcards.date}} {INPUT_VERSION} 2 --object '{{wildcards.object}}' --cookie {COOKIE} --cutoff_time_of_day {CUTOFF_TIME_OF_DAY_START} {CUTOFF_TIME_OF_DAY_END}")
             shell(f"[ ! -f '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}/0_no_data_available' ] && julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}' --checksums")
             shell(f"if [ -f '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}/meta_redownload.csv' ]; then python {DOWNLOAD_SCRIPT} '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2' {{wildcards.date}} {INPUT_VERSION} 2 --object '{{wildcards.object}}' --cookie {COOKIE} --cutoff_time_of_day {CUTOFF_TIME_OF_DAY_START} {CUTOFF_TIME_OF_DAY_END} && julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}' --checksums; fi")
+        """
 
 
 rule prep_manifest:
@@ -161,16 +166,16 @@ rule prep_manifest:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/{{date}}/manifest.csv"
     version: config["MANIFEST_VERSION"]
     run:
-        shell("touch '{output}'")
+        shell(f"touch '{{output}}'")
         
         
 rule merge_manifests:
     input:
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/{{date}}/manifest.csv" 
+        expand(f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/{{date}}/manifest.csv", object=OBJECTS, date=DATES)
     output:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/manifest.csv"
     run:
-        shell("touch '{output}'")
+        shell(f"touch '{{output}}'")
         
         
 rule prep_ssof:
@@ -179,7 +184,7 @@ rule prep_ssof:
     output:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{order}}/data.jld2"
     run:
-        shell("touch '{output}'")
+        shell(f"touch '{{output}}'")
         
         
 rule analyze_ssof:
@@ -189,35 +194,32 @@ rule analyze_ssof:
         results=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results.jld2",
         results_curv=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results_curv.jld2",
         results_boot=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results_boot.jld2"
+    params:
+        prefix = f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}"
     run:
-        shell("touch '{output.results}'")
-        shell("touch '{output.results_curv}'")
-        shell("touch '{output.results_boot}'")
+        shell(f"touch '{{params.prefix}}/results.jld2'")
+        shell(f"touch '{{params.prefix}}/results_curv.jld2'")
+        shell(f"touch '{{params.prefix}}/results_boot.jld2'")
         
         
 rule post_ssof:
     input:
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{order}}/data.jld2",
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results.jld2",
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results_curv.jld2",
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results_boot.jld2"
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/manifest.csv"
+        expand(f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results.jld2", object=OBJECTS, ssof_flag_key=list(SSOF_FLAGS.keys()), order=ORDERS)
     output:
         results_ssof=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/results_ssof.csv",
-        png=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/*.png
+        png=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/*.png"
     run:
-        shell("touch '{output.png}'")
-        shell("touch '{output.results_ssof}'")
+        shell(f"touch '{{output.png}}'")
+        shell(f"touch '{{output.results_ssof}}'")
        
 
 rule report_target_ssof:
     input:
-        manifest=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/manifest.csv",
-        results_ssof=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/results_ssof.csv"
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/results_ssof.csv"
     output:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/summary.toml"
     run:
-        shell("touch '{output}'")
+        shell(f"touch '{{output}}'")
 
 
 onerror:

@@ -9,24 +9,25 @@ INCLUDE_STARS_IN_DATA_FOLDER: True
 STANDARD_STARS:
   - HD 4628
   - HD 9407
-  - HD 10700
-  - HD 89269
-  - HD 127334
-  - GJ 699
-  - HD 185144
-  - HD 221354
+  #- HD 10700
+  #- HD 89269
+  #- HD 127334
+  #- GJ 699
+  #- HD 185144
+  #- HD 221354
 PROGRAMS:
-  - 2021A-2015
-  - 2021B-2015
-  - 2021A-0390
-  - 2021B-0450
+  #- 2021A-2015
+  #- 2021B-2015
+  #- 2021A-0390
+  #- 2021B-0450
 RUN_ALL_DATES: no  # Whether to run all dates b/w given START_DATE and END_DATE
 INPUT_VERSION: 1.1
 MANIFEST_VERSION: 1.1
 USER_ID: # Optional. If no USER_ID is provided here, the environment variable USER will be used
 PIPELINE_ID: test2
 params:
-  orders: 69-72, 77-78
+  orders: 69-70, 77
   ssof_flags: 
     orig: someflag
+    rev: rev1
     
