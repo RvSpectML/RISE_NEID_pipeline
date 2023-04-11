@@ -1,0 +1,4 @@
+cluster: "sbatch --job-name={rule} -A open -p open -t 4:00:00 -N 1 -n 1 --mem=2GB --export=ALL"
+jobs: 8
+verbose: true
+notemp: true
