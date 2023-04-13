@@ -125,7 +125,12 @@ def update_no_data_days():
             shutil.rmtree(f"{L2_folder}/{date}")
 
 
-rule all:
+rule daily_manifest:
+    input:
+        expand(f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/{{date}}/manifest.csv", object=OBJECTS, date=DATES)
+
+
+rule ssof_summary:
     input:
         expand(f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/summary.toml", object=OBJECTS, ssof_flag_key=list(SSOF_FLAGS.keys()))
         
@@ -169,8 +174,6 @@ rule prep_manifest:
         
         
 rule merge_manifests:
-    input:
-        lambda wildcards:expand(f"{DATA_ROOT}/{wildcards.object}/v{INPUT_VERSION}/manifest/{{date}}/manifest.csv", date=DATES)
     output:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/manifest.csv"
     run:
@@ -206,7 +209,8 @@ rule post_ssof:
         lambda wildcards:expand(f"{DATA_ROOT}/{wildcards.object}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{wildcards.ssof_flag_key}/{{order}}/results.jld2", order=ORDERS)
     output:
         results_ssof=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/results_ssof.csv",
-        png=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/*.png"
+        # TODO: confirm png name
+        png=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/ssof.png"
     run:
         shell(f"touch '{{output.png}}'")
         shell(f"touch '{{output.results_ssof}}'")
