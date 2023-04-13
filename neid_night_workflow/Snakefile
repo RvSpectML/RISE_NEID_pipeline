@@ -171,7 +171,7 @@ rule prep_manifest:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/{{date}}/manifest.csv"
     version: config["MANIFEST_VERSION"]
     run:
-        shell(f"touch '{{output}}'")
+        #shell(f"touch '{{output}}'")
         shell(f"julia --project={NEID_NIGHT_SCRIPTS} {NEID_NIGHT_SCRIPTS}/make_manifest_night_v1.0.jl {DATA_ROOT}/{{object}}/v{INPUT_VERSION}/L2/{{data}} {DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/{{date}} ") 
         
         
