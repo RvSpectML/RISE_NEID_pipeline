@@ -27,14 +27,9 @@ echo $SLURM_JOB_NODELIST
 ####################################################################
 
 # set the start and end dates to download data for
-START_DATE="2021-12-19"
-END_DATE="2021-12-20"
+START_DATE="2021-10-10"
+END_DATE="2021-10-10"
 #END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
-
-# Choose whether to download and process daily data or to generate summary reports:
-# DAILY:   download and process daily data for the given days;
-# SUMMARY: generate monthly and summary reports.
-PIPELINE_MODE=DAILY
 
 # Choose whether to run jobs in cluster mode or serial mode:
 # 1: cluster mode
@@ -83,16 +78,17 @@ else
     export PATH=${JULIA_PATH}:$PATH
 fi
 
-if [[ $PIPELINE_MODE == DAILY ]]
+if [[ $CLUSTER_MODE == 1 ]]
 then
-    if [[ $CLUSTER_MODE == 1 ]]
-    then
-        snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20
-    else
-        snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1
-    fi
+    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 daily_manifest
+    
+    sleep 10
+    
+    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 ssof_summary
 else
-    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 --forceall summary_report
+    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 daily_manifest
+    
+    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 ssof_summary
 fi
 
 # Printing out job summary
