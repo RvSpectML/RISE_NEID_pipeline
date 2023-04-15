@@ -11,8 +11,8 @@ START_DATE="2021-10-10"
 END_DATE="2021-10-10"
 #END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
 
-
 echo "# Attempting to processes dates from $START_DATE to $END_DATE."
+
 # Choose whether to run jobs in cluster mode or serial mode:
 # 1: cluster mode
 # 0: serial mode
@@ -67,18 +67,17 @@ echo "# Running snakemake"
 
 if [[ $CLUSTER_MODE == 1 ]]
 then
-    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 daily_manifest
+    snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 daily_manifest
     
     sleep 10
     
-    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 ssof_summary
+    snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 ssof_summary --forceall
 else
-    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 daily_manifest
+    snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 daily_manifest
     
-    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 ssof_summary
+    snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config pipeline_dir=${PIPELINE_DIR} -c1 ssof_summary --forceall
 fi
 
-echo "# snakemake exited"
 date
 
 deactivate

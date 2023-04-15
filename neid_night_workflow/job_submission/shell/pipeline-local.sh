@@ -1,25 +1,5 @@
 #!/bin/bash
 
-####  Job name
-#SBATCH --job-name=neid
-
-####  Request resources here
-####    These are typically, number of processors, amount of memory,
-####    an the amount of time a job requires.  May include processor
-####    type, too.
-#SBATCH --ntasks=1
-#SBATCH --mem=16GB
-#SBATCH --time=23:00:00
-#SBATCH --partition=open
-
-echo "Job $SLURM_JOBID started on $(hostname) at $(date)"
-
-cd $SLURM_SUBMIT_DIR
-
-##  Print the nodename(s) to the output in case needed for diagnostics,
-##  or if you need information about the hardware after the job ran.
-echo $SLURM_JOB_NODELIST
-
 ####################################################################
 #                                                                  #
 # UPDATE VARIABLES HERE                                            #
@@ -31,10 +11,12 @@ START_DATE="2021-10-10"
 END_DATE="2021-10-10"
 #END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
 
+
+echo "# Attempting to processes dates from $START_DATE to $END_DATE."
 # Choose whether to run jobs in cluster mode or serial mode:
 # 1: cluster mode
 # 0: serial mode
-CLUSTER_MODE=1
+CLUSTER_MODE=0
 
 # directory of the pipeline
 #PIPELINE_DIR=/storage/work/dus73/pipeline
@@ -57,8 +39,10 @@ CONFIGFILE=config.yaml
 
 # Path to julia depot _for user submitting the job_.  
 # Do NOT try to have multiple users share one julia depot!
-# Keep commented out if your julia depot is in ~/.julia (good to make this a symlink, so not in home directory)
-#export JULIA_DEPOT_PATH=
+# Julia depot can get big an home directory can be slow, so best not to keep your julia depot in your home directory.  
+# It's good to make ~/.julia a symlink to /storage/work/${USER}/julia_depot, so it's not in home directory and gets found even if forget to set JULIA_DEPOT_PATH.
+# Comment out if your julia depot is in ~/.julia 
+#export JULIA_DEPOT_PATH=/storage/work/${USER}/julia_depot/
 
 ####################################################################
 #                                                                  #
@@ -78,18 +62,24 @@ else
     export PATH=${JULIA_PATH}:$PATH
 fi
 
+date
+echo "# Running snakemake"
+
 if [[ $CLUSTER_MODE == 1 ]]
 then
     snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 daily_manifest
     
     sleep 10
     
-    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 ssof_summary
+    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 ssof_summary --forceall
 else
     snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 daily_manifest
     
-    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 ssof_summary
+    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config pipeline_dir=${PIPELINE_DIR} -c1 ssof_summary --forceall
 fi
 
-# Printing out job summary
-qstat -f $SLURM_JOBID
+echo "# snakemake exited"
+date
+
+deactivate
+

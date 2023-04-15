@@ -139,19 +139,12 @@ $ mkdir -p work/USERID/test1
 $ cd work/USERID/test1
 ```
 
-Copy the template slurm script (`pipeline.slurm`), Snakefile (`Snakefile`) and configuration parameters file (`config.yaml`) into the workspace for your analysis run.
+Copy the template slurm script (`pipeline.slurm`), Snakefile (`Snakefile`) and configuration parameters file (`config.yaml`) into the workspace for your analysis run (replace neid_solar_workflow with neid_night_workflow in the following code for neid_night jobs).
+
 ```
-$ cp ../../../../shared/job_submission/slurm/pipeline.slurm .
-```
-and either
-```
+$ cp ../../../../shared/neid_solar_workflow/job_submission/slurm/pipeline.slurm .
 $ cp ../../../../shared/neid_solar_workflow/Snakefile .
 $ cp ../../../../shared/neid_solar_workflow/config.yaml .
-```
-or
-```
-$ cp ../../../../shared/neid_night_workflow/Snakefile .
-$ cp ../../../../shared/neid_night_workflow/config.yaml .
 ```
 
 Create file nexsci_id.toml in the workspace that includes the username and password for neid. 

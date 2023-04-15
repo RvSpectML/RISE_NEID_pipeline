@@ -7,11 +7,16 @@
 ####################################################################
 
 # set the start and end dates to download data for
-START_DATE="2021-10-10"
-END_DATE="2021-10-10"
+START_DATE="2021-05-29"
+END_DATE="2021-05-29"
 #END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
 
 echo "# Attempting to processes dates from $START_DATE to $END_DATE."
+
+# Choose whether to download and process daily data or to generate summary reports:
+# DAILY:   download and process daily data for the given days;
+# SUMMARY: generate monthly and summary reports.
+PIPELINE_MODE=DAILY
 
 # Choose whether to run jobs in cluster mode or serial mode:
 # 1: cluster mode
@@ -42,7 +47,7 @@ CONFIGFILE=config.yaml
 # Julia depot can get big an home directory can be slow, so best not to keep your julia depot in your home directory.  
 # It's good to make ~/.julia a symlink to /storage/work/${USER}/julia_depot, so it's not in home directory and gets found even if forget to set JULIA_DEPOT_PATH.
 # Comment out if your julia depot is in ~/.julia 
-#export JULIA_DEPOT_PATH=/storage/work/${USER}/julia_depot/
+export JULIA_DEPOT_PATH=/storage/work/${USER}/julia_depot/
 
 ####################################################################
 #                                                                  #
@@ -64,20 +69,17 @@ fi
 
 date
 echo "# Running snakemake"
-
-if [[ $CLUSTER_MODE == 1 ]]
+if [[ $PIPELINE_MODE == DAILY ]]
 then
-    snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 daily_manifest
-    
-    sleep 10
-    
-    snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 ssof_summary
+    if [[ $CLUSTER_MODE == 1 ]]
+    then
+        snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20
+    else
+        snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1
+    fi
 else
-    snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 daily_manifest
-    
-    snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 ssof_summary
+    snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 --forceall summary_report
 fi
-
 date
 
 deactivate
