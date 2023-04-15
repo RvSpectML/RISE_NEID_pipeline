@@ -84,11 +84,11 @@ then
     
     sleep 10
     
-    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 ssof_summary --forceall
+    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20 ssof_summary --forceall
 else
     snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 daily_manifest
     
-    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config pipeline_dir=${PIPELINE_DIR} -c1 ssof_summary --forceall
+    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 ssof_summary --forceall
 fi
 
 # Printing out job summary
