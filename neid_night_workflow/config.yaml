@@ -6,9 +6,10 @@ No_DATA_DAYS_FILENAME:  no_data_days.csv  # path relative to data/{object}/{vers
 DOWNLOAD_SCRIPT: shared/download_codes/download_neid_data.py  # path relative to pipeline_dir
 NEXSCI_ID: nexsci_id.toml  # path relative to analysis run directory
 INSTRUMENT: neid_night
-INCLUDE_STARS_IN_DATA_FOLDER: True
+#INCLUDE_STARS_IN_DATA_FOLDER: True
+INCLUDE_STARS_IN_DATA_FOLDER: False
 STANDARD_STARS:
-  - HD 4628
+        #- HD 4628
   - HD 9407
   #- HD 10700
   #- HD 89269
@@ -25,7 +26,7 @@ RUN_ALL_DATES: no  # Whether to run all dates b/w given START_DATE and END_DATE
 INPUT_VERSION: 1.1
 MANIFEST_VERSION: 1.1
 USER_ID: # Optional. If no USER_ID is provided here, the environment variable USER will be used
-PIPELINE_ID: test2
+PIPELINE_ID: test
 params:
   orders: 69-70, 77
   ssof_flags: 

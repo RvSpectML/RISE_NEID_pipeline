@@ -1,27 +1,24 @@
 #!/bin/bash
 
 ####  Job name
-#PBS -N neid
+#SBATCH --job-name=neid
 
 ####  Request resources here
 ####    These are typically, number of processors, amount of memory,
 ####    an the amount of time a job requires.  May include processor
 ####    type, too.
-#PBS -l nodes=1:ppn=1
-#PBS -l pmem=16gb
-#PBS -l walltime=47:00:00
-#PBS -A open
+#SBATCH --ntasks=1
+#SBATCH --mem=16GB
+#SBATCH --time=23:00:00
+#SBATCH --partition=open
 
-echo "Job $PBS_JOBID started on $(hostname) at $(date)"
+echo "Job $SLURM_JOBID started on $(hostname) at $(date)"
 
-cd $PBS_O_WORKDIR
+cd $SLURM_SUBMIT_DIR
 
 ##  Print the nodename(s) to the output in case needed for diagnostics,
 ##  or if you need information about the hardware after the job ran.
-if [ -e "$PBS_NODEFILE" ] ; then
-    echo "Running on"
-    uniq -c $PBS_NODEFILE
-fi
+echo $SLURM_JOB_NODELIST
 
 ####################################################################
 #                                                                  #
@@ -30,28 +27,24 @@ fi
 ####################################################################
 
 # set the start and end dates to download data for
-START_DATE="2022-05-29"
-END_DATE="2022-05-29"
+START_DATE="2021-10-10"
+END_DATE="2021-10-10"
 #END_DATE=$(date --date='yesterday' +"%Y-%m-%d")
-
-# Choose whether to download and process daily data or to generate summary reports:
-# DAILY:   download and process daily data for the given days;
-# SUMMARY: generate monthly and summary reports.
-PIPELINE_MODE=DAILY
 
 # Choose whether to run jobs in cluster mode or serial mode:
 # 1: cluster mode
 # 0: serial mode
-CLUSTER_MODE=0
+CLUSTER_MODE=1
 
-# root directory of the pipeline
-PIPELINE_DIR=/gpfs/group/ebf11/default/pipeline
+# directory of the pipeline
+#PIPELINE_DIR=/storage/work/dus73/pipeline
+PIPELINE_DIR=/storage/group/ebf11/default/pipeline
 
 # path to the python virtual environment
 VIRTUAL_ENV=${PIPELINE_DIR}/venv/bin/activate
 
 # path to the cluster configuration folder
-PROFILE=${PIPELINE_DIR}/shared/profile/pbs-torque/
+PROFILE=${PIPELINE_DIR}/shared/profile/slurm-open/
 
 # path to the Snakefile
 SNAKEFILE=Snakefile
@@ -60,13 +53,12 @@ SNAKEFILE=Snakefile
 CONFIGFILE=config.yaml
 
 # path to julia. If not provided, the system's julia module will be loaded.
-export JULIA_PATH=/gpfs/group/ebf11/default/sw/julia-1.6.2/bin
-#export JULIA_PATH=/gpfs/group/RISE/sw7/julia-1.7.0/julia-1.7.0/bin
+#export JULIA_PATH=
 
 # Path to julia depot _for user submitting the job_.  
 # Do NOT try to have multiple users share one julia depot!
 # Keep commented out if your julia depot is in ~/.julia (good to make this a symlink, so not in home directory)
-#export JULIA_DEPOT_PATH=/gpfs/group/ebf11/default/sw/.julia  # For Danying's depot
+#export JULIA_DEPOT_PATH=
 
 ####################################################################
 #                                                                  #
@@ -86,17 +78,18 @@ else
     export PATH=${JULIA_PATH}:$PATH
 fi
 
-if [[ $PIPELINE_MODE == DAILY ]]
+if [[ $CLUSTER_MODE == 1 ]]
 then
-    if [[ $CLUSTER_MODE == 1 ]]
-    then
-        snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20
-    else
-        snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1
-    fi
+    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 60 daily_manifest
+    
+    sleep 60
+    
+    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 60 ssof_summary --forceall
 else
-    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 --forceall summary_report
+    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 daily_manifest
+    
+    snakemake --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 ssof_summary --forceall
 fi
 
 # Printing out job summary
-qstat -f $PBS_JOBID
+qstat -f $SLURM_JOBID
