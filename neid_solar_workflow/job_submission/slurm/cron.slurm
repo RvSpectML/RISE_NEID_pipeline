@@ -27,7 +27,7 @@ echo $SLURM_JOB_NODELIST
 
 PIPELINE_JOBID=$(sbatch --parsable ${SLURM_SUBMIT_DIR}/pipeline.slurm)
 
-sleep 10
+sleep 60
 
 ####################################################################
 # Submit the next job                                              #

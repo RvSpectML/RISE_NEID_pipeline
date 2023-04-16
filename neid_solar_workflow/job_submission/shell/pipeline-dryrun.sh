@@ -73,7 +73,7 @@ if [[ $PIPELINE_MODE == DAILY ]]
 then
     if [[ $CLUSTER_MODE == 1 ]]
     then
-        snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 20
+        snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 60
     else
         snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1
     fi
