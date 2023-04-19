@@ -30,10 +30,12 @@ If your pipeline_dir is not already prepared, then we set it up to have the foll
 ├── shared                  (code with Snakemake pipeline and configuration files)
 ├── venv                    (provides python environment)
 ├── neid_solar
-|   ├── NeidSolarScripts.jl (code to perform the actual analysis)
+|   ├── NeidSolarScripts.jl (code for neid_solar analysis)
 |   ├── data                (will contain many large data files)
 |   └── work                (copy neid_solar workflow files here and submit jobs)
 └── neid_night 
+    ├── NeidNightScripts    (code for neid_night analysis)
+    ├── SSOFApplication     (SSOF-specific code)
     ├── data                (will contain many large data files)
     └── work                (copy neid_night workflow files here and submit jobs)
 ```
@@ -113,7 +115,15 @@ $ mkdir neid_night
 $ cd neid_night
 ```
 
-### 1.  Create the data sub-directory 
+### 1. Clone the NeidNightScripts codes
+
+### 2. Clone the SSOFApplication codes
+
+```
+$ git clone git@github.com:christiangil/SSOFApplication.git
+```
+
+### 3.  Create the data sub-directory 
 
 (On RoarCollab, its `/storage/group/ebf11/default/pipeline/neid_night/data`.)
 
@@ -121,7 +131,7 @@ $ cd neid_night
 $ mkdir data 
 ```
 
-### 2.  Create a directory to contain workspaces
+### 4.  Create a directory to contain workspaces
 
 ```
 $ mkidr -p work

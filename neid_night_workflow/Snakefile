@@ -4,6 +4,7 @@ INPUT_VERSION = config["INPUT_VERSION"]
 PIPELINE_ID = config["PIPELINE_ID"]
 NEID_SOLAR_SCRIPTS = PIPELINE_DIR + "/neid_solar/" + config["NEID_SOLAR_SCRIPTS"]
 NEID_NIGHT_SCRIPTS = PIPELINE_DIR + "/neid_night/" + config["NEID_NIGHT_SCRIPTS"]
+NEID_SSOF_SCRIPTS = PIPELINE_DIR + "/neid_night/" + config["NEID_SSOF_SCRIPTS"]
 DATA_ROOT = f"{PIPELINE_DIR}/{INSTRUMENT}/data"
 No_DATA_DAYS_FILENAME = config["No_DATA_DAYS_FILENAME"]
 DOWNLOAD_SCRIPT = PIPELINE_DIR + "/" + config["DOWNLOAD_SCRIPT"]
@@ -180,8 +181,11 @@ rule merge_manifests:
     output:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/manifest.csv"
     run:
-        shell(f"touch '{{output}}'")
-        
+        #shell(f"touch '{{output}}'")
+        manifest_root = f"{DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/manifest"
+        shell(f"[ -f {manifest_root}/manifest.csv ] &&  rm {manifest_root}/manifest.csv'")
+        shell(f"julia --project={NEID_SSOF_SCRIPTS} {NEID_SSOF_SCRIPTS}/NEID/merge_manifests.jl {manifest_root} {manifest_root}/manifest.csv")   
+
         
 rule prep_ssof:
     input:
@@ -189,8 +193,9 @@ rule prep_ssof:
     output:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{order}}/data.jld2"
     run:
-        shell(f"touch '{{output}}'")
-        
+        #shell(f"touch '{{output}}'")
+        shell(f"julia --project={NEID_SSOF_SCRIPTS} {NEID_SSOF_SCRIPTS}/NEID/init.jl {{input}} {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof 20")
+
         
 rule analyze_ssof:
     input:

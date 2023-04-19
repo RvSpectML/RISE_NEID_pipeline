@@ -1,5 +1,6 @@
 NEID_SOLAR_SCRIPTS: NeidSolarScripts.jl
 NEID_NIGHT_SCRIPTS: NeidNightScripts
+NEID_SSOF_SCRIPTS: SSOFApplication
 CUTOFF_TIME_OF_DAY_START: '22:30:00'
 CUTOFF_TIME_OF_DAY_END: '16:45:00'
 No_DATA_DAYS_FILENAME:  no_data_days.csv  # path relative to data/{object}/{version}
