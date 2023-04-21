@@ -10,7 +10,7 @@ INSTRUMENT: neid_night
 #INCLUDE_STARS_IN_DATA_FOLDER: True
 INCLUDE_STARS_IN_DATA_FOLDER: False
 STANDARD_STARS:
-        #- HD 4628
+  - HD 4628
   - HD 9407
   #- HD 10700
   #- HD 89269
@@ -29,6 +29,8 @@ MANIFEST_VERSION: 1.1
 USER_ID: # Optional. If no USER_ID is provided here, the environment variable USER will be used
 PIPELINE_ID: test
 params:
+  max_spectra_number: 20
+  last_order: 118
   orders: 69-70, 77
   ssof_flags: 
     orig: someflag

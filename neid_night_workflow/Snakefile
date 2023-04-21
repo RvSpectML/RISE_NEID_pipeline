@@ -10,6 +10,8 @@ No_DATA_DAYS_FILENAME = config["No_DATA_DAYS_FILENAME"]
 DOWNLOAD_SCRIPT = PIPELINE_DIR + "/" + config["DOWNLOAD_SCRIPT"]
 PROGRAMS = config["PROGRAMS"]
 SSOF_FLAGS = config["params"]["ssof_flags"]
+LAST_ORDER = config["params"]["last_order"]
+MAX_SPECTRA_NUMBER = config["params"]["max_spectra_number"]
 
 # parse orders
 ORDER_STR = config["params"]["orders"]
@@ -176,7 +178,6 @@ rule prep_manifest:
         shell(f"julia --project={NEID_NIGHT_SCRIPTS} {NEID_NIGHT_SCRIPTS}/make_manifest_night_v1.0.jl {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/L2/{{wildcards.date}} {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/manifest/{{wildcards.date}} ") 
         
         
-        
 rule merge_manifests:
     output:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/manifest.csv"
@@ -191,15 +192,15 @@ rule prep_ssof:
     input:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/manifest.csv" 
     output:
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{order}}/data.jld2"
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{LAST_ORDER}/data.jld2"
     run:
         #shell(f"touch '{{output}}'")
-        shell(f"julia --project={NEID_SSOF_SCRIPTS} {NEID_SSOF_SCRIPTS}/NEID/init.jl {{input}} {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof 20")
+        shell(f"julia --project={NEID_SSOF_SCRIPTS} {NEID_SSOF_SCRIPTS}/NEID/init.jl {{input}} {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof {MAX_SPECTRA_NUMBER}")
 
         
 rule analyze_ssof:
     input:
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{order}}/data.jld2"
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{LAST_ORDER}/data.jld2"
     output:
         results=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results.jld2",
         results_curv=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results_curv.jld2",
