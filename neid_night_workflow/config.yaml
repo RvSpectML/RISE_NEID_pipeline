@@ -3,7 +3,6 @@ NEID_NIGHT_SCRIPTS: NeidNightScripts
 NEID_SSOF_SCRIPTS: SSOFApplication
 CUTOFF_TIME_OF_DAY_START: '22:30:00'
 CUTOFF_TIME_OF_DAY_END: '16:45:00'
-No_DATA_DAYS_FILENAME:  no_data_days.csv  # path relative to data/{object}/{version}
 DOWNLOAD_SCRIPT: shared/download_codes/download_neid_data.py  # path relative to pipeline_dir
 NEXSCI_ID: nexsci_id.toml  # path relative to analysis run directory
 INSTRUMENT: neid_night
@@ -19,7 +18,7 @@ STANDARD_STARS:
   #- HD 185144
   #- HD 221354
 PROGRAMS:
-  #- 2021A-2015
+  - 2021A-2015
   #- 2021B-2015
   #- 2021A-0390
   #- 2021B-0450
