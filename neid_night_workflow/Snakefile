@@ -79,6 +79,7 @@ def get_object_dates():
             metafile = f'meta_{program}.csv'
             Neid.query_criteria(param, format='csv', outpath=metafile, cookiepath=COOKIE)
             df = pd.read_csv(metafile)
+            df = df[df['swversion'].str.startswith('v' + str(INPUT_VERSION))]  
             # calcuate the date
             df['date'] = df['date_obs'].apply(lambda x: meta_datetime_to_date(x))
             # group by object and date
@@ -93,6 +94,7 @@ def get_object_dates():
                         if not os.path.exists(dir):
                             os.makedirs(dir)
                         df_object_date.to_csv(f"{dir}/meta_redownload.csv", index=False) 
+                        df_object_date.to_csv(f"{dir}/meta.csv", index=False) 
                     
     # existing object folders
     if config["INCLUDE_STARS_IN_DATA_FOLDER"]:       
@@ -110,6 +112,7 @@ def get_object_dates():
             metafile = f'meta_{object}.csv'
             Neid.query_criteria(param, format='csv', outpath=metafile, cookiepath=COOKIE)
             df_object = pd.read_csv(metafile)
+            df_object = df_object[df_object['swversion'].str.startswith('v' + str(INPUT_VERSION))] 
             # calcuate the date
             df_object['date'] = df_object['date_obs'].apply(lambda x: meta_datetime_to_date(x))
             object_dates[object] = list(pd.unique(df_object['date']))
@@ -120,6 +123,7 @@ def get_object_dates():
                     # save as meta_redownload.csv to the corresponding folder
                     if not os.path.exists(dir):
                         os.makedirs(dir)
+                    df_object_date.to_csv(f"{dir}/meta.csv", index=False) 
                     df_object_date.to_csv(f"{dir}/meta_redownload.csv", index=False) 
     
     with open(OBJECT_DATES_FILE, "w") as f:
@@ -140,16 +144,15 @@ rule all:
     
 rule download_L2:
     output:
-        meta=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/L2/{{date}}/meta.csv",
         verified=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/L2/{{date}}/0_download_verified"
     run:
         # for test purpose
-        shell(f"touch '{{output.meta}}'")
-        shell(f"touch '{{output.verified}}'")
+        #shell(f"touch '{{output.meta}}'")
+        #shell(f"touch '{{output.verified}}'")
         
-        #shell(f"python {DOWNLOAD_SCRIPT} '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2' {{wildcards.date}} {INPUT_VERSION} 2 --object '{{wildcards.object}}' --cookie {COOKIE} --cutoff_time_of_day {CUTOFF_TIME_OF_DAY_START} {CUTOFF_TIME_OF_DAY_END}")
-        #shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}' --checksums")
-        #shell(f"if [ -f '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}/meta_redownload.csv' ]; then python {DOWNLOAD_SCRIPT} '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2' {{wildcards.date}} {INPUT_VERSION} 2 --object '{{wildcards.object}}' --cookie {COOKIE} --cutoff_time_of_day {CUTOFF_TIME_OF_DAY_START} {CUTOFF_TIME_OF_DAY_END} && julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}' --checksums; fi")
+        shell(f"python {DOWNLOAD_SCRIPT} '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2' {{wildcards.date}} {INPUT_VERSION} 2 --object '{{wildcards.object}}' --cookie {COOKIE} --cutoff_time_of_day {CUTOFF_TIME_OF_DAY_START} {CUTOFF_TIME_OF_DAY_END}")
+        shell(f"julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}' --checksums")
+        shell(f"if [ -f '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}/meta_redownload.csv' ]; then python {DOWNLOAD_SCRIPT} '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2' {{wildcards.date}} {INPUT_VERSION} 2 --object '{{wildcards.object}}' --cookie {COOKIE} --cutoff_time_of_day {CUTOFF_TIME_OF_DAY_START} {CUTOFF_TIME_OF_DAY_END} && julia --project={NEID_SOLAR_SCRIPTS} {NEID_SOLAR_SCRIPTS}/scripts/verify_download.jl '{DATA_ROOT}/{{wildcards.object}}/v{INPUT_VERSION}/L2/{{wildcards.date}}' --checksums; fi")
 
 
 rule prep_manifest:
@@ -159,8 +162,8 @@ rule prep_manifest:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/{{date}}/manifest.csv"
     version: config["MANIFEST_VERSION"]
     run:
-        shell(f"touch '{{output}}'")
-        #shell(f"julia --project={NEID_NIGHT_SCRIPTS} {NEID_NIGHT_SCRIPTS}/make_manifest_night_v1.0.jl {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/L2/{{wildcards.date}} {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/manifest/{{wildcards.date}} ") 
+        #shell(f"touch '{{output}}'")
+        shell(f"julia --project={NEID_NIGHT_SCRIPTS} {NEID_NIGHT_SCRIPTS}/make_manifest_night_v1.0.jl {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/L2/{{wildcards.date}} {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/manifest/{{wildcards.date}} ") 
         
         
 rule merge_manifests:
@@ -169,10 +172,10 @@ rule merge_manifests:
     output:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/manifest.csv"
     run:
-        shell(f"touch '{{output}}'")
-        #manifest_root = f"{DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/manifest"
-        #shell(f"[ -f {manifest_root}/manifest.csv ] &&  rm {manifest_root}/manifest.csv'")
-        #shell(f"julia --project={NEID_SSOF_SCRIPTS} {NEID_SSOF_SCRIPTS}/NEID/merge_manifests.jl {manifest_root} {manifest_root}/manifest.csv")   
+        #shell(f"touch '{{output}}'")
+        manifest_root = f"{DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/manifest"
+        shell(f"if [ -f {manifest_root}/manifest.csv ]; then rm {manifest_root}/manifest.csv; fi")
+        shell(f"julia --project={NEID_SSOF_SCRIPTS} {NEID_SSOF_SCRIPTS}/NEID/merge_manifests.jl {manifest_root} {manifest_root}/manifest.csv")   
 
         
 rule prep_ssof:
@@ -181,8 +184,8 @@ rule prep_ssof:
     output:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{LAST_ORDER}/data.jld2"
     run:
-        shell(f"touch '{{output}}'")
-        #shell(f"julia --project={NEID_SSOF_SCRIPTS} {NEID_SSOF_SCRIPTS}/NEID/init.jl {{input}} {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof {MAX_SPECTRA_NUMBER}")
+        #shell(f"touch '{{output}}'")
+        shell(f"julia --project={NEID_SSOF_SCRIPTS} {NEID_SSOF_SCRIPTS}/NEID/init.jl {{input}} {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof {MAX_SPECTRA_NUMBER}")
 
         
 rule analyze_ssof:
