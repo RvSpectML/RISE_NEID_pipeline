@@ -196,12 +196,12 @@ rule analyze_ssof:
         results_curv=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results_curv.jld2",
         results_boot=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results_boot.jld2"
     params:
-        prefix = f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}"
+        ssof_flag_value=lambda wildcards:config["params"]["ssof_flags"][wildcards.ssof_flag_key]
     run:
         #shell(f"touch '{{params.prefix}}/results.jld2'")
         #shell(f"touch '{{params.prefix}}/results_curv.jld2'")
         #shell(f"touch '{{params.prefix}}/results_boot.jld2'")
-        shell(f"julia --project={NEID_SSOF_SCRIPTS}/NEID {NEID_SSOF_SCRIPTS}/NEID/analysis.jl {{input}} {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/neid_pipeline.jld2 {{wildcards.order}} {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{wildcards.ssof_flag_key}}/{{wildcards.order}}/")
+        shell(f"julia --project={NEID_SSOF_SCRIPTS}/NEID {NEID_SSOF_SCRIPTS}/NEID/analysis.jl {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{wildcards.order}}/data.jld2 {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/neid_pipeline.jld2 {{wildcards.order}} {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{wildcards.ssof_flag_key}}/{{wildcards.order}}/")
         
         
 rule post_ssof:

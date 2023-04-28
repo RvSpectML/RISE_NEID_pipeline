@@ -35,7 +35,7 @@ SNAKEFILE=Snakefile
 CONFIGFILE=config.yaml
 
 # path to julia. If not provided, the system's julia module will be loaded.
-#export JULIA_PATH=
+export JULIA_PATH=/storage/group/ebf11/default/software/julia/julia-1.8.4/bin/
 
 # Path to julia depot _for user submitting the job_.  
 # Do NOT try to have multiple users share one julia depot!
@@ -67,9 +67,9 @@ echo "# Running snakemake"
 
 if [[ $CLUSTER_MODE == 1 ]]
 then
-    snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} --profile ${PROFILE} --latency-wait 60 
+    snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} OBJECT_DATES_FILE="object_dates.txt" --profile ${PROFILE} --latency-wait 60 --groups download_L2=group0 prep_manifest=group0 --group-components group0=5
 else
-    snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} -c1 
+    snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} OBJECT_DATES_FILE="object_dates.txt" -c1 
 fi
 
 date

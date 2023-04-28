@@ -40,7 +40,7 @@ SNAKEFILE=Snakefile
 CONFIGFILE=config.yaml
 
 # path to julia. If not provided, the system's julia module will be loaded.
-#export JULIA_PATH=
+export JULIA_PATH=/storage/group/ebf11/default/software/julia/julia-1.8.4/bin/
 
 # Path to julia depot _for user submitting the job_.  
 # Do NOT try to have multiple users share one julia depot!
