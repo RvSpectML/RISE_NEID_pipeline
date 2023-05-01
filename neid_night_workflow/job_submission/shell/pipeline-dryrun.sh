@@ -65,6 +65,8 @@ fi
 date
 echo "# Running snakemake"
 
+if [ -f object_dates.txt ]; then rm object_dates.txt; fi
+
 if [[ $CLUSTER_MODE == 1 ]]
 then
     snakemake -n --keep-going --snakefile ${SNAKEFILE} --configfile ${CONFIGFILE} --config start_date=${START_DATE} end_date=${END_DATE} pipeline_dir=${PIPELINE_DIR} OBJECT_DATES_FILE="object_dates.txt" --profile ${PROFILE} --latency-wait 60 --groups download_L2=group0 prep_manifest=group0 --group-components group0=5
