@@ -7,7 +7,6 @@ NEID_NIGHT_SCRIPTS = PIPELINE_DIR + "/neid_night/" + config["NEID_NIGHT_SCRIPTS"
 NEID_SSOF_SCRIPTS = PIPELINE_DIR + "/neid_night/" + config["NEID_SSOF_SCRIPTS"]
 DATA_ROOT = f"{PIPELINE_DIR}/{INSTRUMENT}/data"
 DOWNLOAD_SCRIPT = PIPELINE_DIR + "/" + config["DOWNLOAD_SCRIPT"]
-PROGRAMS = config["PROGRAMS"]
 SSOF_FLAGS = config["params"]["ssof_flags"]
 LAST_ORDER = config["params"]["last_order"]
 MAX_SPECTRA_NUMBER = config["params"]["max_spectra_number"]
@@ -32,7 +31,6 @@ import json
 import os
 import pandas as pd
 from datetime import datetime, timedelta
-from math import floor
 from pip._vendor import tomli
 from pyneid.neid import Neid
 
@@ -61,12 +59,28 @@ if not os.path.exists(COOKIE):
         toml_dict = tomli.load(f)
         Neid.login(userid=toml_dict["user"], password=toml_dict["password"], cookiepath=COOKIE)
 
-# convert a datetime in the format "%Y-%m-%d %H:%M:%S.%f" to the date bucket it belongs to in the format "%Y/%m%d"
+# convert a datetime in the format "%Y-%m-%d %H:%M:%S.%f" to the date bucket it belongs to in the format "%Y/%m/%d"
 def meta_datetime_to_date(s):
     shift_time = datetime.strptime(CUTOFF_TIME_OF_DAY_END, "%H:%M:%S")
     shift_hours = shift_time.hour + shift_time.minute / 60
     return (datetime.strptime(s, "%Y-%m-%d %H:%M:%S.%f") - timedelta(hours = shift_hours)).date().strftime("%Y/%m/%d")
    
+# split meta file for an object by dates and save as 
+# meta.csv and meta_redownload.csv to the (object,date) folder
+def split_meta_file(df_object, dir_object, run_all_dates):
+    df_object['date'] = df_object['date_obs'].apply(lambda x: meta_datetime_to_date(x))
+    dates = list(pd.unique(df_object['date']))
+    for date in dates:
+        dir = f"{dir_object}/{date}"
+        if run_all_dates == "yes" or not os.path.exists(f"{dir}/0_download_verified"):
+            df_object_date = df_object[df_object['date'] == date]
+            # save as meta_redownload.csv to the corresponding folder
+            if not os.path.exists(dir):
+                os.makedirs(dir)
+            df_object_date.to_csv(f"{dir}/meta.csv", index=False) 
+            df_object_date.to_csv(f"{dir}/meta_redownload.csv", index=False)             
+    return dates
+
 # Get all objects including the standard stars defined in config and the objects in the programs
 def get_object_dates():
     object_dates = {}
@@ -80,21 +94,10 @@ def get_object_dates():
             Neid.query_criteria(param, format='csv', outpath=metafile, cookiepath=COOKIE)
             df = pd.read_csv(metafile)
             df = df[df['swversion'].str.startswith('v' + str(INPUT_VERSION))]  
-            # calcuate the date
-            df['date'] = df['date_obs'].apply(lambda x: meta_datetime_to_date(x))
             # group by object and date
             for object in pd.unique(df['object']):
                 df_object = df[df['object'] == object]
-                object_dates[object] = list(pd.unique(df_object['date']))
-                for date in object_dates[object]:
-                    dir = f"{DATA_ROOT}/{object}/v{INPUT_VERSION}/L2/{date}"
-                    if config["RUN_ALL_DATES"] == "yes" or not os.path.exists(f"{dir}/0_download_verified"):
-                        df_object_date = df_object[df_object['date'] == date]
-                        # save as meta_redownload.csv to the corresponding folder
-                        if not os.path.exists(dir):
-                            os.makedirs(dir)
-                        df_object_date.to_csv(f"{dir}/meta_redownload.csv", index=False) 
-                        df_object_date.to_csv(f"{dir}/meta.csv", index=False) 
+                object_dates[object] = split_meta_file(df_object, f"{DATA_ROOT}/{object}/v{INPUT_VERSION}/L2", config["RUN_ALL_DATES"]) 
                     
     # existing object folders
     if config["INCLUDE_STARS_IN_DATA_FOLDER"]:       
@@ -113,18 +116,8 @@ def get_object_dates():
             Neid.query_criteria(param, format='csv', outpath=metafile, cookiepath=COOKIE)
             df_object = pd.read_csv(metafile)
             df_object = df_object[df_object['swversion'].str.startswith('v' + str(INPUT_VERSION))] 
-            # calcuate the date
-            df_object['date'] = df_object['date_obs'].apply(lambda x: meta_datetime_to_date(x))
-            object_dates[object] = list(pd.unique(df_object['date']))
-            for date in object_dates[object]:
-                dir = f"{DATA_ROOT}/{object}/v{INPUT_VERSION}/L2/{date}"
-                if config["RUN_ALL_DATES"] == "yes" or not os.path.exists(f"{dir}/0_download_verified"):
-                    df_object_date = df_object[df_object['date'] == date]
-                    # save as meta_redownload.csv to the corresponding folder
-                    if not os.path.exists(dir):
-                        os.makedirs(dir)
-                    df_object_date.to_csv(f"{dir}/meta.csv", index=False) 
-                    df_object_date.to_csv(f"{dir}/meta_redownload.csv", index=False) 
+            # split the object'smeta file by dates
+            object_dates[object] = split_meta_file(df_object, f"{DATA_ROOT}/{object}/v{INPUT_VERSION}/L2", config["RUN_ALL_DATES"]) 
     
     with open(OBJECT_DATES_FILE, "w") as f:
         json.dump(object_dates, f)
@@ -196,12 +189,14 @@ rule analyze_ssof:
         results_curv=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results_curv.jld2",
         results_boot=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results_boot.jld2"
     params:
-        ssof_flag_value=lambda wildcards:config["params"]["ssof_flags"][wildcards.ssof_flag_key]
+        ssof_flag_value=lambda wildcards:SSOF_FLAGS[wildcards.ssof_flag_key]
     run:
         #shell(f"touch '{{params.prefix}}/results.jld2'")
         #shell(f"touch '{{params.prefix}}/results_curv.jld2'")
         #shell(f"touch '{{params.prefix}}/results_boot.jld2'")
-        shell(f"julia --project={NEID_SSOF_SCRIPTS}/NEID {NEID_SSOF_SCRIPTS}/NEID/analysis.jl {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{wildcards.order}}/data.jld2 {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/neid_pipeline.jld2 {{wildcards.order}} {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{wildcards.ssof_flag_key}}/{{wildcards.order}}/")
+        
+        ssof_root = f"{DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof"
+        shell(f"julia --project={NEID_SSOF_SCRIPTS}/NEID {NEID_SSOF_SCRIPTS}/NEID/analysis.jl {ssof_root}/{{wildcards.order}}/data.jld2 {ssof_root}/neid_pipeline.jld2 {{wildcards.order}} {ssof_root}/{{wildcards.ssof_flag_key}}/{{wildcards.order}}/ {{params.ssof_flag_value}}")
         
         
 rule post_ssof:

@@ -32,6 +32,5 @@ params:
   last_order: 118
   orders: 69-70, 77
   ssof_flags: 
-    orig: someflag
-    rev: rev1
-    
+    orig: 
+    #someflag: --someflag false
