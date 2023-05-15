@@ -8,7 +8,7 @@
 ####    an the amount of time a job requires.  May include processor
 ####    type, too.
 #SBATCH --ntasks=1
-#SBATCH --mem=16GB
+#SBATCH --mem=4GB
 #SBATCH --time=23:00:00
 #SBATCH --partition=open
 

@@ -139,6 +139,11 @@ if os.path.exists(OBJECT_DATES_FILE):
         OBJECT_DATES = json.load(f)
 else:
     OBJECT_DATES = get_object_dates()
+    
+    
+def get_mem_mb(wildcards, attempt):
+	return 8000*(2**(attempt - 1))
+
 
 rule all:
     input:
@@ -186,6 +191,9 @@ rule prep_ssof:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/manifest/manifest.csv" 
     output:
         f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{LAST_ORDER}/data.jld2"
+    resources:
+        mem_mb_per_cpu=get_mem_mb
+    retries: 1
     run:
         #shell(f"touch '{{output}}'")
         shell(f"julia --project={NEID_SSOF_SCRIPTS}/NEID {NEID_SSOF_SCRIPTS}/NEID/init.jl '{{input}}' {DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof {MAX_SPECTRA_NUMBER}")
@@ -200,6 +208,9 @@ rule analyze_ssof:
         results_boot=f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/{{order}}/results_boot.jld2"
     params:
         ssof_flag_value=lambda wildcards:SSOF_FLAGS[wildcards.ssof_flag_key]
+    resources:
+        mem_mb_per_cpu=get_mem_mb
+    retries: 1
     run:
         #shell(f"touch '{{params.prefix}}/results.jld2'")
         #shell(f"touch '{{params.prefix}}/results_curv.jld2'")
