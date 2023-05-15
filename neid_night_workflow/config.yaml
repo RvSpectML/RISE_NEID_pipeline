@@ -9,7 +9,7 @@ INSTRUMENT: neid_night
 #INCLUDE_STARS_IN_DATA_FOLDER: True
 INCLUDE_STARS_IN_DATA_FOLDER: False
 STANDARD_STARS:
-  - HD 4628
+  #- HD 4628
   - HD 9407
   #- HD 10700
   #- HD 89269
@@ -18,7 +18,7 @@ STANDARD_STARS:
   #- HD 185144
   #- HD 221354
 PROGRAMS:
-  - 2021A-2015
+  #- 2021A-2015
   #- 2021B-2015
   #- 2021A-0390
   #- 2021B-0450
@@ -30,7 +30,7 @@ PIPELINE_ID: test
 params:
   max_spectra_number: 20
   last_order: 118
-  orders: 25-75 # TODO: extend gather_ssof's ability to accept intermittent range, e.g. "67-70, 77".
+  orders: 25-75 # default:25-75. Single number needs to be enclosed by quotes '', so it will be taken as string instead of number. TODO: extend gather_ssof's ability to accept intermittent range, e.g. "67-70, 77".
   ssof_flags: 
     orig: 
     #someflag: --someflag false
