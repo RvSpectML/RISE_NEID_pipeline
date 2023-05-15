@@ -23,6 +23,16 @@ for x in ORDER_STR.split(","):
         ORDERS.extend(range(int(l[0]), int(l[1]) + 1))
     else:
         raise Exception("Can't parse ORDER_STR!")
+        
+# get the order range string for rulle gather_ssof
+# TODO: update this section once gather_ssof is able to handle intermittent range such as "67-70, 77"
+l = x.strip().split("-")
+if len(l) == 1:
+    GATHER_ORDER_RANGE = f"[{l[0]},{l[0]}]"
+elif len(l) == 2:
+    GATHER_ORDER_RANGE = f"[{l[0]},{l[1]}]"
+else:
+    raise Exception("Can't parse ORDER_STR for gather_ssof!")   
 
 CUTOFF_TIME_OF_DAY_START = config["CUTOFF_TIME_OF_DAY_START"]
 CUTOFF_TIME_OF_DAY_END = config["CUTOFF_TIME_OF_DAY_END"]
@@ -208,7 +218,7 @@ rule gather_ssof:
         #shell(f"touch '{{output.png}}'")
         #shell(f"touch '{{output.results_ssof}}'")
         ssof_root = f"{DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof"
-        shell(f"julia --project={NEID_SSOF_SCRIPTS}/NEID {NEID_SSOF_SCRIPTS}/NEID/gather.jl {ssof_root}/{{wildcards.ssof_flag_key}}/ssof_rvs.jld2 {ssof_root}/{{wildcards.ssof_flag_key}}/ {ssof_root}/")
+        shell(f"julia --project={NEID_SSOF_SCRIPTS}/NEID {NEID_SSOF_SCRIPTS}/NEID/gather.jl {ssof_root}/{{wildcards.ssof_flag_key}}/ssof_rvs.jld2 {ssof_root}/{{wildcards.ssof_flag_key}}/ {ssof_root}/ {GATHER_ORDER_RANGE}")
        
 
 rule reduce_ssof:

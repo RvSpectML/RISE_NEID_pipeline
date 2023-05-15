@@ -30,7 +30,7 @@ PIPELINE_ID: test
 params:
   max_spectra_number: 20
   last_order: 118
-  orders: 69-70, 77
+  orders: 25-75 # TODO: extend gather_ssof's ability to accept intermittent range, e.g. "67-70, 77".
   ssof_flags: 
     orig: 
     #someflag: --someflag false
