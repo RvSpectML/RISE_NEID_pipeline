@@ -212,32 +212,16 @@ rule analyze_ssof:
         mem_mb_per_cpu=get_mem_mb
     retries: 1
     run:
-        #shell(f"touch '{{params.prefix}}/results.jld2'")
-        #shell(f"touch '{{params.prefix}}/results_curv.jld2'")
-        #shell(f"touch '{{params.prefix}}/results_boot.jld2'")
-        
         ssof_root = f"{DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof"
         shell(f"julia --project={NEID_SSOF_SCRIPTS}/NEID {NEID_SSOF_SCRIPTS}/NEID/analysis.jl {ssof_root}/{{wildcards.order}}/data.jld2 {ssof_root}/neid_pipeline.jld2 {{wildcards.order}} {ssof_root}/{{wildcards.ssof_flag_key}}/{{wildcards.order}}/ {{params.ssof_flag_value}}")
         
         
-rule gather_ssof:
+rule post_ssof:
     input:
         lambda wildcards:expand(f"{DATA_ROOT}/{wildcards.object}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{wildcards.ssof_flag_key}/{{order}}/results.jld2", order=ORDERS)
     output:
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/ssof_rvs.jld2",
+        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/ssof_rvs_reduced.jld2",
     run:
-        #shell(f"touch '{{output.png}}'")
-        #shell(f"touch '{{output.results_ssof}}'")
         ssof_root = f"{DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof"
         shell(f"julia --project={NEID_SSOF_SCRIPTS}/NEID {NEID_SSOF_SCRIPTS}/NEID/gather.jl {ssof_root}/{{wildcards.ssof_flag_key}}/ssof_rvs.jld2 {ssof_root}/{{wildcards.ssof_flag_key}}/ {ssof_root}/ {GATHER_ORDER_RANGE}")
-       
-
-rule reduce_ssof:
-    input:
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/ssof_rvs.jld2"
-    output:
-        f"{DATA_ROOT}/{{object}}/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof/{{ssof_flag_key}}/ssof_rvs_reduced.jld2"
-    run:
-        #shell(f"touch '{{output}}'")
-        ssof_root = f"{DATA_ROOT}/'{{wildcards.object}}'/v{INPUT_VERSION}/outputs/{USER_ID}/{PIPELINE_ID}/ssof"
         shell(f"julia --project={NEID_SSOF_SCRIPTS}/NEID {NEID_SSOF_SCRIPTS}/NEID/reduce.jl {ssof_root}/{{wildcards.ssof_flag_key}}/ssof_rvs_reduced.jld2 {ssof_root}/{{wildcards.ssof_flag_key}}/ssof_neid_rv_comparison.png {ssof_root}/{{wildcards.ssof_flag_key}}/ssof_rvs.jld2 {ssof_root}/neid_pipeline.jld2 {GATHER_ORDER_RANGE}")
